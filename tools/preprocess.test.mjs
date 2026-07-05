@@ -86,6 +86,12 @@ describe('preprocess output schema', () => {
     }
   });
 
+  it('computes state border segments', () => {
+    const { stateBorders } = out.world;
+    expect(stateBorders.length).toBeGreaterThan(1000);
+    for (const seg of stateBorders.slice(0, 10)) expect(seg.length).toBe(4);
+  });
+
   it('passes people through with roles', () => {
     expect(out.world.people.length).toBe(73);
     const roles = new Set(out.world.people.map((p) => p.role));

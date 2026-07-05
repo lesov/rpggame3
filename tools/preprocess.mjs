@@ -240,8 +240,26 @@ export function build({ full, buildings, features, people }) {
     .filter((z) => z && !z.hidden)
     .map((z) => ({ i: z.i, name: z.name, type: z.type, cells: z.cells }));
 
+  // State borders: for each pair of adjacent cells in different states, the
+  // shared polygon edge (the two vertices both cells touch).
+  const stateBorders = [];
+  for (const c of pack.cells) {
+    for (const n of c.c) {
+      if (n <= c.i) continue;
+      const other = pack.cells[n];
+      if (!other || other.state === c.state) continue;
+      if (c.h < 20 && other.h < 20) continue; // skip water-water
+      const shared = c.v.filter((v) => other.v.includes(v));
+      if (shared.length >= 2) {
+        const [a, b] = [pack.vertices[shared[0]].p, pack.vertices[shared[1]].p];
+        stateBorders.push([a[0], a[1], b[0], b[1]]);
+      }
+    }
+  }
+
   const world = {
     states,
+    stateBorders,
     provinces,
     cultures,
     religions,

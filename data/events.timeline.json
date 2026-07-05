@@ -1,0 +1,425 @@
+{
+  "comment": "Scripted world events 1181-1281, hand-encoded from lepasoul_1181_1281_campaign_bible.md. kind=anchor are the century-defining events; kind=story are flavored events (bible allows +/-3y drift; dates here are the defaults). burg = location as burg id (capital burg id == state id).",
+  "events": [
+    {
+      "id": "opening-rumors",
+      "year": 1181, "month": 1, "day": 2,
+      "kind": "story",
+      "title": "Rumors at the year's turning",
+      "description": "The year opens with six wars still burning across two continents. In the west, holy-war sermons echo from the Khazadur pulpits; in the east, traders whisper that the steppe tribes are killing each other again. Nobody cares. They should.",
+      "states": []
+    },
+    {
+      "id": "old-wars-settle",
+      "year": 1183, "month": 9, "day": 1,
+      "kind": "story",
+      "title": "The old wars burn out",
+      "description": "One by one, the wars that opened the decade grind toward exhaustion. Frontiers quiet, mercenaries drift toward new employers, and the world takes a breath it does not know is its last for a century.",
+      "states": []
+    },
+    {
+      "id": "kalaghryka-falls",
+      "year": 1183, "month": 6, "day": 10,
+      "kind": "story",
+      "title": "Kalaghryka bows to Sios",
+      "description": "Emperor Tarimaran completes his conquest of the breakaway kingdom of Kalaghryka. The Schismatic East is unified under one emperor for the first time in generations. Exiled Kalaghrykan princes scatter into foreign courts, nursing claims and grudges.",
+      "burg": 17,
+      "states": [32, 17]
+    },
+    {
+      "id": "hattin",
+      "year": 1187, "month": 7, "day": 4,
+      "kind": "anchor",
+      "title": "Disaster at the Horns",
+      "description": "Emperor Tarimaran of Sios annihilates a crusader host of the Khazadur states and seizes the holy city. The shockwave runs through every wood-elf court on Evagreg: church bells toll for a month, and the Nakinb Theocracy preaches vengeance from every pulpit.",
+      "burg": 32,
+      "states": [32, 3, 18, 31, 6]
+    },
+    {
+      "id": "third-crusade-begins",
+      "year": 1189, "month": 5, "day": 1,
+      "kind": "anchor",
+      "title": "The Great Crusade marches",
+      "description": "A grand coalition — Shun, Guzah, and Kin, with Amalan's Covenant knights as the foreign contingent — marches on Sios to retake the holy city. Banners of a dozen houses fill the roads east.",
+      "burg": 3,
+      "states": [18, 31, 6, 25, 32]
+    },
+    {
+      "id": "third-crusade-ends",
+      "year": 1192, "month": 9, "day": 15,
+      "kind": "story",
+      "title": "The Crusade ends in a weary truce",
+      "description": "Three years of battlefield victories buy no strategic prize. The holy city stays in Siosian hands; a negotiated truce grants pilgrims safe passage. The heroes sail home famous and empty-handed.",
+      "burg": 32,
+      "states": [18, 31, 6, 25, 32]
+    },
+    {
+      "id": "tarimaran-dies",
+      "year": 1193, "month": 3, "day": 20,
+      "kind": "story",
+      "title": "Emperor Tarimaran is dead",
+      "description": "The lion of Sios dies in his capital at Rharakar. His heirs begin quarreling before the tomb is sealed. The empire he unified starts its long, slow decay.",
+      "burg": 32,
+      "states": [32]
+    },
+    {
+      "id": "araduppum-dies",
+      "year": 1195, "month": 8, "day": 12,
+      "kind": "anchor",
+      "title": "Empress Araduppum is dead",
+      "description": "The last ruler of the old steppe order dies at Animereb, and the Gizinese succession shatters into open war. On the far edge of the steppe, the Kharbhat line's young heir begins gathering riders. The steppe has caught fire.",
+      "burg": 21,
+      "states": [21, 12]
+    },
+    {
+      "id": "tatar-feud-begins",
+      "year": 1199, "month": 4, "day": 10,
+      "kind": "story",
+      "title": "Blood feud on the steppe",
+      "description": "The rising Unifier turns on the orc khanate of Chandmalagia to settle an old blood debt. The war is merciless even by steppe standards.",
+      "burg": 26,
+      "states": [12, 26]
+    },
+    {
+      "id": "chandmalagia-broken",
+      "year": 1202, "month": 7, "day": 1,
+      "kind": "story",
+      "title": "Chandmalagia is broken",
+      "description": "The Chandmalagian ruling line is exterminated and its clans forcibly absorbed. Its orc warriors, given the choice of the sword or the banner, become some of the fiercest regiments the steppe has ever fielded.",
+      "burg": 26,
+      "states": [12, 26]
+    },
+    {
+      "id": "kerait-betrayal",
+      "year": 1203, "month": 5, "day": 15,
+      "kind": "story",
+      "title": "The Kerait betrayal",
+      "description": "Khatun Luzh of Bobadeli, the aging hegemon who once patronized the young Unifier, turns on her protégé — and is destroyed. Her khaganate is absorbed whole. On the steppe, they begin to say the boy cannot be beaten.",
+      "burg": 24,
+      "states": [24, 12]
+    },
+    {
+      "id": "diverted-crusade",
+      "year": 1204, "month": 4, "day": 12,
+      "kind": "anchor",
+      "title": "The diverted crusade sacks Shemsemyhe",
+      "description": "The Republic of Nelkug bankrolls a Canopy Song crusade — then steers it onto its own trade rival. Shemsemyhe, holiest city of their shared faith, is sacked by co-religionists. Iocizar survives as a diminished rump; Nelkug grows rich on the plunder; the crusading ideal is stained forever.",
+      "burg": 4,
+      "states": [10, 4]
+    },
+    {
+      "id": "kopuzkyurt-falls",
+      "year": 1205, "month": 6, "day": 20,
+      "kind": "story",
+      "title": "The last free khaganate falls",
+      "description": "Kopuzkyurt, last independent power of the steppe, is defeated and absorbed. Khagan Dubecha's schemes end in a tent on a windswept plain. Nothing on the steppe now stands apart from the Unifier.",
+      "burg": 14,
+      "states": [14, 12]
+    },
+    {
+      "id": "kurultai",
+      "year": 1206, "month": 5, "day": 1,
+      "kind": "anchor",
+      "title": "The Great Kurultai",
+      "description": "On the high steppe, the khans of Gizin, Kharbhat, Bobadeli, Kopuzkyurt and Chandmalagia bow to one banner. The Unifier is proclaimed Great Khagan of a united horde — some two hundred and thirty thousand riders. Nothing on the map can match it. Few in the west have even heard of it.",
+      "burg": 12,
+      "states": [21, 12, 24, 14, 26]
+    },
+    {
+      "id": "albigensian-begins",
+      "year": 1209, "month": 6, "day": 15,
+      "kind": "anchor",
+      "title": "Crusade against the Schism",
+      "description": "Hierarch Hanlenor of Nakinb preaches the extermination of the Shunduled Schism within Christendom's own borders. Land-hungry Khazadur lords descend on the tiny principality of Guzadzar. Twenty years of sieges, massacres, submissions and revolts begin.",
+      "burg": 16,
+      "states": [3, 16]
+    },
+    {
+      "id": "ceru-submits",
+      "year": 1210, "month": 4, "day": 1,
+      "kind": "story",
+      "title": "Cer'u kneels first",
+      "description": "The lizardfolk theocracy of Cer'u reads the wind and submits to the horde as its first tributary. Sanctified Regent Skar pays the tribute and keeps his throne — for now.",
+      "burg": 11,
+      "states": [11, 21]
+    },
+    {
+      "id": "jin-war-begins",
+      "year": 1211, "month": 8, "day": 5,
+      "kind": "story",
+      "title": "The horde against the mountains",
+      "description": "The horde hurls itself at the dwarven fortress-state of Mathathremo — and for the first time, walls hold it. A long grinding war begins in the Basheva passes. Grand Duchess Aragzad trades stone for time.",
+      "burg": 29,
+      "states": [21, 29]
+    },
+    {
+      "id": "las-navas",
+      "year": 1212, "month": 7, "day": 16,
+      "kind": "story",
+      "title": "The serpent host is broken",
+      "description": "Z'phei'se and its Covenant allies shatter Enelelt's field army in a single tremendous battle. The serpent-kingdom will fight on from its fortresses, but the reconquest is now inexorable — fortress by fortress, decade by decade.",
+      "burg": 28,
+      "states": [27, 28]
+    },
+    {
+      "id": "bouvines",
+      "year": 1214, "month": 7, "day": 27,
+      "kind": "story",
+      "title": "Tarlivah triumphant",
+      "description": "Tarlivah crushes an Amalan-led coalition in a decisive battle. Amalan's continental holdings collapse, and its humiliated crown sails home to face furious barons.",
+      "burg": 22,
+      "states": [22, 25]
+    },
+    {
+      "id": "magna-carta",
+      "year": 1215, "month": 6, "day": 15,
+      "kind": "story",
+      "title": "The Charter of Liberties",
+      "description": "Knighbouria's barons rise and force a charter from King Roccosta's line: the crown itself is bound by law. Clerks copy the document by candlelight; every court on Evagreg debates what it means.",
+      "burg": 20,
+      "states": [20]
+    },
+    {
+      "id": "envoys-massacre",
+      "year": 1219, "month": 9, "day": 1,
+      "kind": "anchor",
+      "title": "The envoys come back dead",
+      "description": "Khagan Vyshon's men seize a horde-protected portal caravan at Mememil and execute the envoys sent to demand redress. The Great Khagan turns the entire horde west. Kozesleli has signed its own death warrant.",
+      "burg": 9,
+      "states": [21, 9]
+    },
+    {
+      "id": "siegecraft",
+      "year": 1220, "month": 3, "day": 10,
+      "kind": "story",
+      "title": "No wall is safe",
+      "description": "Dwarven engineers captured in the Mathathremo war are pressed into the Great Khagan's service. The horde, which once broke against fortifications, now brings them down in days. The age of the safe city is over.",
+      "states": [21, 29]
+    },
+    {
+      "id": "kozesleli-erased",
+      "year": 1221, "month": 5, "day": 30,
+      "kind": "anchor",
+      "title": "Kozesleli is no more",
+      "description": "Two years of annihilation end: the khaganate of Kozesleli is erased from the map — its cities razed, its populations dispersed, its name spoken in whispers. The world has learned what the horde is.",
+      "burg": 9,
+      "states": [21, 9]
+    },
+    {
+      "id": "kalka",
+      "year": 1223, "month": 5, "day": 31,
+      "kind": "anchor",
+      "title": "Slaughter at the river",
+      "description": "A horde reconnaissance force loops around the inland sea, crushes Snowsia and its steppe allies in a single battle — and vanishes back east. The West files the report under rumor. It is a rehearsal.",
+      "burg": 7,
+      "states": [21, 7]
+    },
+    {
+      "id": "khagan-dies-ceru",
+      "year": 1227, "month": 8, "day": 18,
+      "kind": "story",
+      "title": "The Great Khagan is dead",
+      "description": "Cer'u refuses its troop levies and revolts; the horde destroys it utterly. But during the final campaign, the Great Khagan — the Unifier, conqueror of the steppe — dies. His empire holds its breath.",
+      "burg": 11,
+      "states": [21, 11]
+    },
+    {
+      "id": "first-kurultai-pause",
+      "year": 1227, "month": 9, "day": 15,
+      "kind": "anchor",
+      "title": "The horde stands still",
+      "description": "By the law of the steppe, every horde army halts and rides home for the kurultai. Campaigns freeze mid-conquest; besieged cities wake to empty horizons. For two years, the world's most terrifying army is busy with politics.",
+      "states": [21]
+    },
+    {
+      "id": "second-khagan",
+      "year": 1229, "month": 6, "day": 1,
+      "kind": "story",
+      "title": "A second Great Khagan is enthroned",
+      "description": "The kurultai ends; the dead Unifier's chosen heir takes the title. The pause is over. The horde remembers exactly where it left off.",
+      "burg": 12,
+      "states": [21]
+    },
+    {
+      "id": "albigensian-ends",
+      "year": 1229, "month": 4, "day": 16,
+      "kind": "story",
+      "title": "Guzadzar submits",
+      "description": "Twenty years of crusade end with Guzadzar's formal submission. Princess Shemar's long doomed game of submission and revolt is finished. The Schism's surviving perfecti slip away north, into the forests of Nolon.",
+      "burg": 16,
+      "states": [3, 16]
+    },
+    {
+      "id": "mathathremo-falls",
+      "year": 1234, "month": 2, "day": 9,
+      "kind": "story",
+      "title": "The mountains fall silent",
+      "description": "Mathathremo's last hold falls after twenty-three years of war. The dwarven diaspora begins: smiths, engineers, and grudge-bearers scattering into every western court — carrying the siegecraft that doomed them.",
+      "burg": 29,
+      "states": [21, 29]
+    },
+    {
+      "id": "west-invasion",
+      "year": 1237, "month": 12, "day": 21,
+      "kind": "anchor",
+      "title": "The horde comes west",
+      "description": "No rumor this time. The horde returns west in full strength and Snowsia is conquered outright — its Divine Vicars reduced to tax collectors for the khagan. Refugees stream toward every border.",
+      "burg": 7,
+      "states": [21, 7]
+    },
+    {
+      "id": "lubrolaralom-sacked",
+      "year": 1240, "month": 12, "day": 6,
+      "kind": "anchor",
+      "title": "Lubrolaralom is sacked",
+      "description": "Snowsia's great capital burns. The columns of smoke are visible for three days' ride. Khazadur Christendom finally understands that the eastern rumors were all true, and begins to prepare for the end of the world.",
+      "burg": 7,
+      "states": [21, 7]
+    },
+    {
+      "id": "legnica",
+      "year": 1241, "month": 4, "day": 9,
+      "kind": "anchor",
+      "title": "Ruin in the north",
+      "description": "Khizdum's assembled host is annihilated in a single day. Omarilenya burns. The kingdom's knighthood dies on one field, in one afternoon.",
+      "burg": 30,
+      "states": [21, 30]
+    },
+    {
+      "id": "mohi",
+      "year": 1241, "month": 4, "day": 11,
+      "kind": "anchor",
+      "title": "Ruin in the south",
+      "description": "Two days later and three hundred miles away, Khundush's host is destroyed in its turn and Imlumye burns. Refugees flood every road on the continent. Nothing now stands between the horde and the western sea.",
+      "burg": 15,
+      "states": [21, 15]
+    },
+    {
+      "id": "the-miracle",
+      "year": 1242, "month": 3, "day": 1,
+      "kind": "anchor",
+      "title": "The miracle",
+      "description": "The second Great Khagan dies, far away in the east. By steppe law the entire invasion force turns around and rides home for the kurultai. Evagreg is saved by an event none of its people caused, witnessed, or will ever understand. Every faith on the continent claims the credit.",
+      "states": [21]
+    },
+    {
+      "id": "lake-peipus",
+      "year": 1242, "month": 4, "day": 5,
+      "kind": "story",
+      "title": "Battle on the frozen lake",
+      "description": "The Shaterian Order, moving to carve up horde-shattered Khundush, is met on a frozen lake and beaten. The ice takes as many knights as the axes do. The Order's expansion is checked for a generation.",
+      "burg": 15,
+      "states": [1, 15]
+    },
+    {
+      "id": "montsegur",
+      "year": 1244, "month": 3, "day": 16,
+      "kind": "story",
+      "title": "The last fastness burns",
+      "description": "The final Schismatic refuge in Nolon's forests falls after a long winter siege. The perfecti walk singing into the fire. The Shunduled Schism survives now only in Sios — and in hiding.",
+      "burg": 13,
+      "states": [13, 3]
+    },
+    {
+      "id": "regency-era",
+      "year": 1246, "month": 8, "day": 24,
+      "kind": "story",
+      "title": "The khatun's regency",
+      "description": "A short-lived Great Khagan dies and a formidable khatun rules the horde as regent through the interregnum — receiving embassies, poisoning rivals, and holding the world's largest empire together with letters and fear.",
+      "states": [21]
+    },
+    {
+      "id": "fourth-khagan",
+      "year": 1252, "month": 7, "day": 1,
+      "kind": "story",
+      "title": "The fourth Great Khagan",
+      "description": "The succession struggles end: a fourth Great Khagan consolidates power and begins planning the final conquests — south against ancient Ghron, east against rump Iocizar. The pause is over again.",
+      "states": [21]
+    },
+    {
+      "id": "zinulb-sack",
+      "year": 1258, "month": 2, "day": 10,
+      "kind": "anchor",
+      "title": "The sack of Zinulb",
+      "description": "Ancient Ghron falls in a week. The High Pontiff of the Boniz'tar faith is executed, the great libraries and the Basilica of Onamenzhor burn, and priceless relics scatter into the world's black markets. The moral nadir of the century: every faith on the map preaches on it for a decade.",
+      "burg": 8,
+      "states": [21, 8]
+    },
+    {
+      "id": "ain-jalut",
+      "year": 1260, "month": 9, "day": 3,
+      "kind": "anchor",
+      "title": "The horde is beaten",
+      "description": "Fresh from Zinulb, the horde's western spearhead probes toward Khatharbh — and meets its massed host head-on. For the first time in fifty years, a horde field army is truly defeated. The western limit of the conquest is fixed, forever, on this field.",
+      "burg": 2,
+      "states": [2, 21]
+    },
+    {
+      "id": "baybars-coup",
+      "year": 1260, "month": 11, "day": 20,
+      "kind": "story",
+      "title": "The general takes the throne",
+      "description": "Within the year, Khatharbh's victorious warlord murders Sanctified Regent Inferiatha and takes the throne. The priesthood blesses what it cannot prevent. Khatharbh is now the military hegemon of the West.",
+      "burg": 2,
+      "states": [2]
+    },
+    {
+      "id": "horde-civil-war",
+      "year": 1262, "month": 5, "day": 5,
+      "kind": "anchor",
+      "title": "The horde tears itself apart",
+      "description": "Rival khagans take the field against each other. The empire that conquered the world proves unable to survive its own inheritance law.",
+      "states": [21]
+    },
+    {
+      "id": "partition",
+      "year": 1264, "month": 8, "day": 1,
+      "kind": "anchor",
+      "title": "Four khanates from one horde",
+      "description": "The civil war ends in partition: the Home Ulus on the old steppe, the Western Ulus over the Kozesleli and Snowsian plains, the Southern Ulus over Mathathremo and Ghron, and the Eastern Great Khanate holding the imperial title. The horde is dead; the khanates are born.",
+      "states": [21]
+    },
+    {
+      "id": "pax-begins",
+      "year": 1265, "month": 3, "day": 1,
+      "kind": "anchor",
+      "title": "The Great Peace opens the roads",
+      "description": "The successor khanates, hungry for revenue, protect and standardize the roads and the portal network. Portal fees drop, guild traffic triples, and goods, ideas and travelers cross the world as never before. The age of dread gives way to the age of the open road.",
+      "states": []
+    },
+    {
+      "id": "iocizar-naval-war",
+      "year": 1268, "month": 6, "day": 10,
+      "kind": "story",
+      "title": "Fleets against Iocizar",
+      "description": "The Eastern Great Khanate — steppe riders who a generation ago had never seen the sea — builds fleets and opens the long naval siege of rump Iocizar. The last conquest has begun.",
+      "burg": 4,
+      "states": [21, 4]
+    },
+    {
+      "id": "first-divine-storm",
+      "year": 1274, "month": 10, "day": 20,
+      "kind": "anchor",
+      "title": "The first divine storm",
+      "description": "The Great Khanate launches an armada across the strait. A tempest out of nowhere annihilates it — hundreds of ships, tens of thousands of soldiers, gone in a night. The survivors call it the wind of the gods.",
+      "states": [21, 10]
+    },
+    {
+      "id": "shemsemyhe-falls",
+      "year": 1279, "month": 3, "day": 19,
+      "kind": "anchor",
+      "title": "Shemsemyhe falls — the last conquest",
+      "description": "After eleven years of naval war, rump Iocizar's capital finally falls to the Eastern Great Khanate. Seventy-five years after crusaders sacked it, the city ends the century under a khan's banner. It is the horde's last conquest.",
+      "burg": 4,
+      "states": [21, 4]
+    },
+    {
+      "id": "second-divine-storm",
+      "year": 1281, "month": 8, "day": 15,
+      "kind": "anchor",
+      "title": "The second divine storm",
+      "description": "A second, greater armada sails — and a second tempest destroys it utterly. The khanates will never sail in force again. For weeks afterward, a coastline of salvage, survivors and secrets washes ashore: the century closes on beachcombers picking through the wreck of the world's last great conquest.",
+      "states": [21, 10]
+    }
+  ]
+}
