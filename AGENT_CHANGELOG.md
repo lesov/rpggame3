@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-05 12:45 PDT - claude-fable-5 - feature/claude-fable-5/world-map-time-ui
+
+- Status: ready-for-review
+- Summary: Data fix requested by human: culture name "Thyran (Wood Elf" (missing closing parenthesis in the source export) is now repaired during preprocessing (`fixParens` in tools/preprocess.mjs) — applied to culture names, people culture fields, and namedFeatures nameCulture. Source data files left untouched per workflow; fix survives future re-exports. All 26 occurrences now balanced in generated output.
+- Files changed: tools/preprocess.mjs, tools/preprocess.test.mjs
+- Tests run: `npx vitest run` — 44 tests passed (new test asserts every culture name is paren-balanced across outputs); `npm run preprocess` regenerated public/data.
+- UI review: pending-human-test (unchanged)
+- Blockers or coordination notes: none
+
 ## 2026-07-05 12:20 PDT - claude-fable-5 - feature/claude-fable-5/world-map-time-ui
 
 - Status: ready-for-review

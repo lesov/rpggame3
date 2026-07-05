@@ -97,4 +97,18 @@ describe('preprocess output schema', () => {
     const roles = new Set(out.world.people.map((p) => p.role));
     expect(roles.has('state_ruler')).toBe(true);
   });
+
+  it('repairs the unbalanced "Thyran (Wood Elf" culture name everywhere', () => {
+    const thyran = out.world.cultures.find((c) => c.name.startsWith('Thyran'));
+    expect(thyran.name).toBe('Thyran (Wood Elf)');
+    for (const c of out.world.cultures) {
+      expect((c.name.match(/\(/g) ?? []).length).toBe((c.name.match(/\)/g) ?? []).length);
+    }
+    for (const p of out.world.people) {
+      if (p.culture) expect(p.culture).not.toMatch(/\([^)]*$/);
+    }
+    for (const f of out.world.namedFeatures) {
+      if (f.nameCulture) expect(f.nameCulture).not.toMatch(/\([^)]*$/);
+    }
+  });
 });

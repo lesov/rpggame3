@@ -26,6 +26,18 @@ export const INPUT_FILES = {
 const r1 = (v) => Math.round(v * 10) / 10;
 const r2 = (v) => Math.round(v * 100) / 100;
 
+/**
+ * The source data has one malformed culture name, "Thyran (Wood Elf" —
+ * missing its closing parenthesis — which leaks into people records too.
+ * Balance any name that opens more parens than it closes.
+ */
+export function fixParens(name) {
+  if (typeof name !== 'string') return name;
+  const open = (name.match(/\(/g) ?? []).length;
+  const close = (name.match(/\)/g) ?? []).length;
+  return open > close ? name.trimEnd() + ')'.repeat(open - close) : name;
+}
+
 export function loadInputs(root = ROOT) {
   const read = (f) => JSON.parse(fs.readFileSync(path.join(root, f), 'utf8'));
   return {
@@ -184,7 +196,7 @@ export function build({ full, buildings, features, people }) {
 
   const cultures = pack.cultures
     .filter((c) => c && !c.removed)
-    .map((c) => ({ i: c.i, name: c.name, type: c.type, color: c.color }));
+    .map((c) => ({ i: c.i, name: fixParens(c.name), type: c.type, color: c.color }));
 
   const religions = pack.religions
     .filter((r) => r && typeof r === 'object' && !r.removed)
@@ -268,11 +280,14 @@ export function build({ full, buildings, features, people }) {
     routes,
     markers,
     zones,
-    people: people.people,
+    people: people.people.map((p) => ({ ...p, culture: fixParens(p.culture) })),
     regiments,
     // Named geography from lepasoul.features.json (cells dropped; the
     // cell->feature indexes below are how lookups happen).
-    namedFeatures: features.features.map(({ cells: _c, ...f }) => f),
+    namedFeatures: features.features.map(({ cells: _c, ...f }) => ({
+      ...f,
+      ...(f.nameCulture ? { nameCulture: fixParens(f.nameCulture) } : {}),
+    })),
     landmasses: features.landmasses,
     waterFeatures: features.waterFeatures.map(({ cells: _c, ...f }) => f),
     indexes: {
