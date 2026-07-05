@@ -17,7 +17,7 @@ export const MONTH_NAMES = [
 ];
 export const DAYS_PER_YEAR = 365;
 
-const MONTH_START = MONTH_LENGTHS.reduce<number[]>((acc, len, i) => {
+const MONTH_START = MONTH_LENGTHS.reduce<number[]>((acc, _len, i) => {
   acc.push(i === 0 ? 0 : acc[i - 1] + MONTH_LENGTHS[i - 1]);
   return acc;
 }, []);

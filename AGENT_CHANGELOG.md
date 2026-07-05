@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-05 12:20 PDT - claude-fable-5 - feature/claude-fable-5/world-map-time-ui
+
+- Status: ready-for-review
+- Summary: Milestone 1 complete. Vite+React+TS app: canvas world map (terrain/political modes, pan/zoom, rivers, roads, borders, labels, lore markers), time progression from 1181-01-01 SE (step/play controls), event feed (46 scripted campaign-bible events + 128 wars from map data + deterministic ambient events), click-anywhere inspector (named geography, elevation, simulated seasonal weather with 3-day outlook, realm/rulers/wars, full settlement details, nearby POIs with lore). Preprocessing pipeline converts the raw Azgaar export + companion files into public/data artifacts (gitignored; run `npm run preprocess`).
+- Files changed: package.json, vite.config.ts, tsconfig.json, index.html, .gitignore, tools/preprocess.mjs(+test), data/events.timeline.json, src/sim/* (+tests), src/map/* (+test), src/data/* (+test), src/ui/*
+- Tests run: `npx vitest run` — 7 files, 43 tests, all passed (2026-07-05). `npx tsc -b` clean. Browser smoke test via Playwright headless Chromium: app loads, map renders, +1y/+1mo advance fires the 1187 Hattin anchor, event click jumps map and opens inspector, map click shows full place info, political mode and play/pause work, zero console errors (screenshots in session scratchpad).
+- UI review: pending-human-test — run `npm run preprocess && npm run dev`, open http://localhost:5173
+- Blockers or coordination notes: World source data files remain untracked/human-owned. Playwright needed local extraction of libnspr4/libnss3 (no sudo available) — see scratchpad libs; harmless to redo. No merge to main without explicit human approval.
+
 ## 2026-07-04 23:30 PDT - claude-fable-5 - feature/claude-fable-5/world-map-time-ui
 
 - Status: started

@@ -5,7 +5,7 @@
  * sightings near the map's lore markers. Tuned to ~1–3 events per week
  * world-wide.
  */
-import { type GameDate, dayOfYear, toOrdinal, fromOrdinal } from './calendar';
+import { type GameDate, dayOfYear, fromOrdinal } from './calendar';
 import { hash, mulberry32, pick } from './rng';
 import { type CellClimate, weatherAt, isSevere } from './weather';
 import type { WorldEvent } from './events';

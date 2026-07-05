@@ -1,3 +1,111 @@
+import { useEffect, useState } from 'react';
+import { loadWorld, type WorldData } from '../data/worldLoader';
+import { GameProvider, useGame } from './store';
+import { MapView } from './MapView';
+import { TimeControls } from './TimeControls';
+import { EventFeed } from './EventFeed';
+import { Inspector } from './Inspector';
+
+function LayerToggles() {
+  const { state, dispatch } = useGame();
+  const o = state.options;
+  return (
+    <div className="layer-toggles">
+      <button
+        className={o.mode === 'biome' ? 'chip active' : 'chip'}
+        onClick={() => dispatch({ type: 'setOptions', options: { mode: 'biome' } })}
+      >
+        Terrain
+      </button>
+      <button
+        className={o.mode === 'political' ? 'chip active' : 'chip'}
+        onClick={() => dispatch({ type: 'setOptions', options: { mode: 'political' } })}
+      >
+        Political
+      </button>
+      <button
+        className={o.showRoutes ? 'chip active' : 'chip'}
+        onClick={() => dispatch({ type: 'setOptions', options: { showRoutes: !o.showRoutes } })}
+      >
+        Roads
+      </button>
+      <button
+        className={o.showMarkers ? 'chip active' : 'chip'}
+        onClick={() => dispatch({ type: 'setOptions', options: { showMarkers: !o.showMarkers } })}
+      >
+        Markers
+      </button>
+      <button
+        className={o.showLabels ? 'chip active' : 'chip'}
+        onClick={() => dispatch({ type: 'setOptions', options: { showLabels: !o.showLabels } })}
+      >
+        Labels
+      </button>
+    </div>
+  );
+}
+
+function SidePanel() {
+  const { state, dispatch } = useGame();
+  return (
+    <aside className="side-panel">
+      <div className="panel-tabs">
+        <button
+          className={state.panelTab === 'events' ? 'tab active' : 'tab'}
+          onClick={() => dispatch({ type: 'setTab', tab: 'events' })}
+        >
+          World events
+        </button>
+        <button
+          className={state.panelTab === 'inspector' ? 'tab active' : 'tab'}
+          onClick={() => dispatch({ type: 'setTab', tab: 'inspector' })}
+        >
+          Inspector
+        </button>
+      </div>
+      <div className="panel-body">
+        {state.panelTab === 'events' ? <EventFeed /> : <Inspector />}
+      </div>
+    </aside>
+  );
+}
+
+function Game({ wd }: { wd: WorldData }) {
+  return (
+    <GameProvider wd={wd}>
+      <div className="app">
+        <header className="app-header">
+          <h1>Lepasoul</h1>
+          <TimeControls />
+          <LayerToggles />
+        </header>
+        <main className="app-main">
+          <MapView />
+          <SidePanel />
+        </main>
+      </div>
+    </GameProvider>
+  );
+}
+
 export function App() {
-  return <div className="app-loading">Loading Lepasoul…</div>;
+  const [wd, setWd] = useState<WorldData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadWorld().then(setWd, (e) => setError(String(e)));
+  }, []);
+
+  if (error) {
+    return (
+      <div className="app-loading error">
+        <div>
+          <p>Failed to load world data.</p>
+          <p className="error-detail">{error}</p>
+        </div>
+      </div>
+    );
+  }
+  if (!wd) return <div className="app-loading">Loading Lepasoul… (first load fetches ~8 MB of world data)</div>;
+  return <Game wd={wd} />;
 }

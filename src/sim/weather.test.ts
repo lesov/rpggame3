@@ -8,7 +8,6 @@ const polar: CellClimate = { id: 100, temp: -18, prec: 10, lat: 78, coastRank: 3
 const southern: CellClimate = { id: 9000, temp: 12, prec: 20, lat: -45, coastRank: 6, isWater: false };
 
 const jan: GameDate = { year: 1181, month: 1, day: 15 };
-const jul: GameDate = { year: 1181, month: 7, day: 15 };
 
 function avgTemp(cell: CellClimate, month: number): number {
   let sum = 0;
