@@ -1,0 +1,31 @@
+:root {
+  color-scheme: dark;
+  --bg: #14181f;
+  --panel: #1c222c;
+  --panel-2: #232b37;
+  --border: #313c4c;
+  --text: #d7dee8;
+  --text-dim: #8b98a8;
+  --accent: #d9a44a;
+  --accent-2: #5a9bd4;
+  --danger: #c96a5a;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app-loading {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-dim);
+}
