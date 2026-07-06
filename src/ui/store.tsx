@@ -9,6 +9,7 @@ import { fireBetween, ongoingWarsAt, type WorldEvent } from '../sim/events';
 import { ambientEventsBetween } from '../sim/ambient';
 import type { WorldData } from '../data/worldLoader';
 import type { RenderOptions } from '../map/renderer';
+import type { PlayerCharacter } from '../player/types';
 
 export type Speed = 'day' | 'week' | 'month';
 export const SPEED_DAYS: Record<Speed, number> = { day: 1, week: 7, month: 30 };
@@ -33,10 +34,11 @@ export interface GameState {
   playing: boolean;
   speed: Speed;
   selection: Selection | null;
-  panelTab: 'events' | 'inspector';
+  panelTab: 'events' | 'inspector' | 'character' | 'inventory';
   options: RenderOptions;
   jump: JumpCommand | null;
   focus: { x: number; y: number } | null;
+  player: PlayerCharacter | null;
 }
 
 export type GameAction =
@@ -46,7 +48,8 @@ export type GameAction =
   | { type: 'select'; selection: Selection }
   | { type: 'setTab'; tab: GameState['panelTab'] }
   | { type: 'setOptions'; options: Partial<RenderOptions> }
-  | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number };
+  | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number }
+  | { type: 'setPlayer'; player: PlayerCharacter };
 
 const FEED_CAP = 400;
 
@@ -100,6 +103,7 @@ export function initialState(wd: WorldData): GameState {
     options: { mode: 'biome', showMarkers: true, showRoutes: true, showLabels: true },
     jump: null,
     focus: null,
+    player: null,
   };
 }
 
@@ -141,6 +145,23 @@ export function makeReducer(wd: WorldData) {
           focus: { x: action.x, y: action.y },
           selection,
           panelTab: action.selectCell !== undefined ? 'inspector' : state.panelTab,
+        };
+      }
+      case 'setPlayer': {
+        const { location } = action.player;
+        const jump: JumpCommand = {
+          seq: (state.jump?.seq ?? 0) + 1,
+          x: location.x,
+          y: location.y,
+          minZoom: 6,
+        };
+        return {
+          ...state,
+          player: action.player,
+          jump,
+          focus: { x: location.x, y: location.y },
+          selection: { cellId: location.cellId, x: location.x, y: location.y },
+          panelTab: 'character',
         };
       }
       default:
