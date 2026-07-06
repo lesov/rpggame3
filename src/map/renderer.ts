@@ -23,6 +23,7 @@ export interface RenderOptions {
 export interface RenderExtras {
   selection?: { x: number; y: number; cellId: number };
   focus?: { x: number; y: number };
+  player?: { x: number; y: number; name: string };
 }
 
 const VECTOR_ZOOM = 3;
@@ -274,6 +275,31 @@ export class MapRenderer {
       ctx.arc(sx, sy, 2.2, 0, Math.PI * 2);
       ctx.fillStyle = '#f2c14e';
       ctx.fill();
+    }
+
+    // Player marker
+    if (extras.player) {
+      const [sx, sy] = this.toScreen(view, extras.player.x, extras.player.y);
+      ctx.beginPath();
+      ctx.arc(sx, sy, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#f7f1df';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#2d8f68';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(sx, sy, 2.4, 0, Math.PI * 2);
+      ctx.fillStyle = '#2d8f68';
+      ctx.fill();
+      if (view.k >= 2) {
+        ctx.textAlign = 'center';
+        ctx.font = "600 12px 'Segoe UI', sans-serif";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(12, 10, 8, 0.86)';
+        ctx.fillStyle = '#f7f1df';
+        ctx.strokeText(extras.player.name, sx, sy - 12);
+        ctx.fillText(extras.player.name, sx, sy - 12);
+      }
     }
 
     // Focus ping (recently jumped-to event location)
