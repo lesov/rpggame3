@@ -124,7 +124,7 @@ function Battle({ combat }: { combat: CombatState }) {
         <CombatantCard c={combat.player} round={combat.round} side="player" />
 
         <section className="combat-log" data-testid="combat-log">
-          {beats.map((b) => (
+          {beats.filter((b) => b.kind !== 'outro').map((b) => (
             <div className={`beat ${b.kind}`} key={b.id}>
               {(b.prose || b.streaming) && (
                 <p className={`prose${b.streaming && !b.prose ? ' shimmer' : ''}`}>
@@ -183,7 +183,7 @@ function Battle({ combat }: { combat: CombatState }) {
         )}
       </footer>
 
-      {combat.outcome && <EndOverlay combat={combat} />}
+      {combat.outcome && <EndOverlay combat={combat} outro={beats.find((b) => b.kind === 'outro')} />}
     </div>
   );
 }
@@ -220,7 +220,7 @@ function CombatantCard({ c, round, side }: { c: Combatant; round: number; side: 
   );
 }
 
-function EndOverlay({ combat }: { combat: CombatState }) {
+function EndOverlay({ combat, outro }: { combat: CombatState; outro?: Beat }) {
   const { dispatch } = useGame();
   const [picking, setPicking] = useState(false);
   const groups: Record<string, typeof MONSTERS> = { easy: [], fair: [], hard: [] };
@@ -230,6 +230,11 @@ function EndOverlay({ combat }: { combat: CombatState }) {
     <div className="combat-overlay" data-testid="combat-overlay">
       <div className="overlay-card">
         <h2>{outcomeLabel(combat)}</h2>
+        {!picking && (
+          <p className={`overlay-outro${outro?.streaming && !outro.prose ? ' shimmer' : ''}`} data-testid="overlay-outro">
+            {outro?.prose || 'Drawing the aftermath…'}
+          </p>
+        )}
         {!picking ? (
           <div className="overlay-actions">
             <button
