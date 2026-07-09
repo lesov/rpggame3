@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-09 - claude-fable-5 - feature/claude-fable-5/combat-screen
+
+- Status: started
+- Summary: Combat milestone — dedicated full-screen D&D 2024 combat: click-to-roll dice with full calculation display, initiative-ordered turns, injury/exhaustion tracking, escape with shown odds, in-combat potion use, biome/weather/time-of-day scene integration, LLM narration via Claude Haiku 4.5 (plain factual fallback without API key), battle test on character creation, no permadeath (replay + opponent picker). Plan approved by human.
+- Files changed: package.json (+@anthropic-ai/sdk)
+- Tests run: (none yet)
+- UI review: pending-human-test
+- Blockers or coordination notes: builds on codex's src/player module (read-only usage); combat code lives in new src/combat/ to minimize overlap.
+
 ## 2026-07-08 22:06 CDT - codex - feature/codex/starting-inventory-kit
 
 - Status: started
