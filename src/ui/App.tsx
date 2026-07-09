@@ -7,6 +7,7 @@ import { EventFeed } from './EventFeed';
 import { Inspector } from './Inspector';
 import { CharacterBuilder } from './CharacterBuilder';
 import { InventoryPanel } from './InventoryPanel';
+import { CombatScreen } from './CombatScreen';
 
 function LayerToggles() {
   const { state, dispatch } = useGame();
@@ -87,20 +88,28 @@ function SidePanel() {
   );
 }
 
+function Shell() {
+  const { state } = useGame();
+  if (state.screen === 'combat') return <CombatScreen />;
+  return (
+    <div className="app">
+      <header className="app-header">
+        <h1>Lepasoul</h1>
+        <TimeControls />
+        <LayerToggles />
+      </header>
+      <main className="app-main">
+        <MapView />
+        <SidePanel />
+      </main>
+    </div>
+  );
+}
+
 function Game({ wd }: { wd: WorldData }) {
   return (
     <GameProvider wd={wd}>
-      <div className="app">
-        <header className="app-header">
-          <h1>Lepasoul</h1>
-          <TimeControls />
-          <LayerToggles />
-        </header>
-        <main className="app-main">
-          <MapView />
-          <SidePanel />
-        </main>
-      </div>
+      <Shell />
     </GameProvider>
   );
 }

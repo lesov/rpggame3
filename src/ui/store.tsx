@@ -10,6 +10,10 @@ import { ambientEventsBetween } from '../sim/ambient';
 import type { WorldData } from '../data/worldLoader';
 import type { RenderOptions } from '../map/renderer';
 import type { PlayerCharacter } from '../player/types';
+import type { CombatState } from '../combat/types';
+import { createCombat, initialPendingRoll, potionsRemaining } from '../combat/engine';
+import { getMonster, defaultOpponentFor } from '../combat/monsters';
+import { buildScene } from '../combat/scene';
 
 export type Speed = 'day' | 'week' | 'month';
 export const SPEED_DAYS: Record<Speed, number> = { day: 1, week: 7, month: 30 };
@@ -39,6 +43,8 @@ export interface GameState {
   jump: JumpCommand | null;
   focus: { x: number; y: number } | null;
   player: PlayerCharacter | null;
+  screen: 'map' | 'combat';
+  combat: CombatState | null;
 }
 
 export type GameAction =
@@ -49,7 +55,10 @@ export type GameAction =
   | { type: 'setTab'; tab: GameState['panelTab'] }
   | { type: 'setOptions'; options: Partial<RenderOptions> }
   | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number }
-  | { type: 'setPlayer'; player: PlayerCharacter };
+  | { type: 'setPlayer'; player: PlayerCharacter }
+  | { type: 'startCombat'; monsterId?: string; seed?: number }
+  | { type: 'setCombat'; combat: CombatState }
+  | { type: 'endCombat' };
 
 const FEED_CAP = 400;
 
@@ -104,7 +113,26 @@ export function initialState(wd: WorldData): GameState {
     jump: null,
     focus: null,
     player: null,
+    screen: 'map',
+    combat: null,
   };
+}
+
+/** Build a fresh combat against the given (or biome-appropriate) opponent. */
+function beginCombat(
+  wd: WorldData,
+  player: PlayerCharacter,
+  date: GameDate,
+  monsterId: string | undefined,
+  seed: number,
+): CombatState {
+  const loc = player.location;
+  const scene = buildScene(wd, loc.cellId, loc.x, loc.y, date);
+  const cell = wd.geometry.cells[loc.cellId];
+  const monster = monsterId
+    ? getMonster(monsterId)
+    : defaultOpponentFor(cell?.biome ?? 4, Boolean(cell?.burg));
+  return initialPendingRoll(createCombat(player, monster, scene, seed));
 }
 
 export function makeReducer(wd: WorldData) {
@@ -163,6 +191,28 @@ export function makeReducer(wd: WorldData) {
           selection: { cellId: location.cellId, x: location.x, y: location.y },
           panelTab: 'character',
         };
+      }
+      case 'startCombat': {
+        if (!state.player) return state;
+        const seed = action.seed ?? ((Math.random() * 0x7fffffff) | 0);
+        const combat = beginCombat(wd, state.player, state.date, action.monsterId, seed);
+        return { ...state, screen: 'combat', combat, playing: false };
+      }
+      case 'setCombat':
+        return { ...state, combat: action.combat };
+      case 'endCombat': {
+        // Persist potions drunk during the fight back to the player's inventory.
+        let player = state.player;
+        if (player && state.combat) {
+          const left = potionsRemaining(state.combat);
+          player = {
+            ...player,
+            inventory: player.inventory.map((item) =>
+              item.id === 'healing-potion' ? { ...item, quantity: left } : item,
+            ),
+          };
+        }
+        return { ...state, screen: 'map', combat: null, player };
       }
       default:
         return state;
