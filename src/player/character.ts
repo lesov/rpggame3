@@ -6,7 +6,7 @@ import {
   getBackgroundRule,
   getClassRule,
   getSpeciesRule,
-  startingInventoryForClimate,
+  startingInventoryForCharacter,
   validateAbilityScores,
 } from './rules2024';
 import { chooseStartingLocation } from './spawn';
@@ -121,7 +121,7 @@ export function buildPlayerCharacter(
     story: `${backstory.premise} ${trainingLine}`,
     powerExplanation: trainingLine,
     minorBonus: backstory.minorBonus,
-    inventory: startingInventoryForClimate(startClimate.temp),
+    inventory: startingInventoryForCharacter(cls.id, startClimate.temp),
     location,
     createdAt,
   };

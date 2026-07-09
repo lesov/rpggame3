@@ -25,7 +25,7 @@ export function InventoryPanel() {
             <em>{item.equipped ? 'equipped' : item.category}</em>
           </div>
         ))}
-        <div className="small-note">Weapons, armor, packs, tools, and coin were lost before the opening scene.</div>
+        <div className="small-note">Starting kit includes one class-proficient weapon, 2 healing potions, 5 days of provisions, and 118 vosels.</div>
       </div>
       <div className="section">
         <h3>Story</h3>

@@ -77,7 +77,7 @@ function CharacterSheet({ player }: { player: PlayerCharacter }) {
       <div className="section">
         <h3>Inventory</h3>
         <div className="kv"><span>Carried</span><span>{player.inventory.map((item) => item.name).join(', ')}</span></div>
-        <div className="small-note">No weapons, armor, packs, tools, or coin.</div>
+        <div className="small-note">Includes one class-proficient weapon, travel supplies, vosels, and wizard spellbook when applicable.</div>
       </div>
     </div>
   );
@@ -262,7 +262,7 @@ export function CharacterBuilder() {
         <div className="kv"><span>Story</span><span>{backstory.premise}</span></div>
         <div className="kv"><span>Training</span><span>{backstory.powerExplanation}</span></div>
         <div className="kv"><span>Minor bonus</span><span>{backstory.minorBonus.name}: {backstory.minorBonus.description}</span></div>
-        <div className="kv"><span>Inventory</span><span>Plain robe and sandals, or a coat and shoes in cold climates; no weapons.</span></div>
+        <div className="kv"><span>Inventory</span><span>Climate clothing, one proficient weapon, 2 healing potions, 5 days provisions, and 118 vosels. Wizards also receive a spellbook.</span></div>
       </div>
 
       {(validation.length > 0 || error) && (
