@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-08 22:06 CDT - codex - feature/codex/starting-inventory-kit
+
+- Status: started
+- Summary: Add richer starting inventory for all player starts, including pregenerated characters: proficient weapon, healing potions, provisions, vosels, and wizard spellbook.
+- Files changed: (none yet)
+- Tests run: (none yet)
+- UI review: pending-human-test
+- Blockers or coordination notes: Working on branch per workflow; leaving untracked source world files untouched.
+
+## 2026-07-08 22:08 CDT - codex - feature/codex/starting-inventory-kit
+
+- Status: ready-for-review
+- Summary: Starting inventory now includes climate clothing, one class-proficient weapon, 2 healing potions, 5 days of food provisions, 118 vosels, and a wizard-only spellbook. Pregenerated characters use the same build path and tests assert they receive the appropriate items.
+- Files changed: AGENT_CHANGELOG.md, src/player/rules2024.ts, src/player/character.ts, src/player/types.ts, src/player/character.test.ts, src/ui/CharacterBuilder.tsx, src/ui/InventoryPanel.tsx
+- Tests run: `npx vitest run src/player/character.test.ts` — 7 tests passed; `npm run build` — passed; `npm test` — 51 tests passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: Inventory display text changed, so human UI review remains required before merge under repository instructions.
+
+## 2026-07-08 22:17 CDT - codex - feature/codex/starting-inventory-kit
+
+- Status: approved
+- Summary: Human approver tested the starting inventory changes and stated "everything is checked ok", explicitly requesting merge and push.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/player/character.test.ts` — 7 tests passed as of previous entry; `npm run build` — passed as of previous entry; `npm test` — 51 tests passed as of previous entry.
+- UI review: approved-by-human (2026-07-08)
+- Blockers or coordination notes: Proceeding to commit feature branch, merge into main, and push main per human approval. No release tag requested.
+
 ## 2026-07-05 18:20 CDT - codex - feature/codex/player-character-start
 
 - Status: started

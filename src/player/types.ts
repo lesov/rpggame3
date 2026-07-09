@@ -126,7 +126,7 @@ export interface InventoryItem {
   id: string;
   name: string;
   quantity: number;
-  category: 'clothing' | 'weapon' | 'armor' | 'tool' | 'gear' | 'coin';
+  category: 'clothing' | 'weapon' | 'armor' | 'tool' | 'gear' | 'consumable' | 'coin';
   equipped?: boolean;
   note?: string;
 }

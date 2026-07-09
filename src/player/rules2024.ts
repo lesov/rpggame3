@@ -5,6 +5,7 @@ import {
   type BackgroundRule,
   type CharacterClassId,
   type ClassRule,
+  type InventoryItem,
   type OriginBackgroundId,
   type Skill,
   type SpeciesId,
@@ -230,13 +231,84 @@ export const COLD_STARTING_INVENTORY = [
   { id: 'coat', name: 'Plain coat', quantity: 1, category: 'clothing' as const, equipped: true, note: 'Heavy enough for cold roads, but plain and unmarked.' },
 ];
 
+export interface StartingWeapon {
+  id: string;
+  name: string;
+  training: 'simple' | 'martial' | 'martial-finesse-or-light' | 'martial-light';
+  properties?: string[];
+}
+
+export const STARTING_WEAPON_BY_CLASS: Record<CharacterClassId, StartingWeapon> = {
+  barbarian: { id: 'battleaxe', name: 'Battleaxe', training: 'martial' },
+  bard: { id: 'dagger', name: 'Dagger', training: 'simple', properties: ['finesse', 'light'] },
+  cleric: { id: 'mace', name: 'Mace', training: 'simple' },
+  druid: { id: 'quarterstaff', name: 'Quarterstaff', training: 'simple' },
+  fighter: { id: 'longsword', name: 'Longsword', training: 'martial' },
+  monk: { id: 'spear', name: 'Spear', training: 'simple' },
+  paladin: { id: 'longsword', name: 'Longsword', training: 'martial' },
+  ranger: { id: 'shortsword', name: 'Shortsword', training: 'martial', properties: ['finesse', 'light'] },
+  rogue: { id: 'rapier', name: 'Rapier', training: 'martial-finesse-or-light', properties: ['finesse'] },
+  sorcerer: { id: 'dagger', name: 'Dagger', training: 'simple', properties: ['finesse', 'light'] },
+  warlock: { id: 'dagger', name: 'Dagger', training: 'simple', properties: ['finesse', 'light'] },
+  wizard: { id: 'quarterstaff', name: 'Quarterstaff', training: 'simple' },
+};
+
+export function startingWeaponForClass(classId: CharacterClassId): StartingWeapon {
+  return STARTING_WEAPON_BY_CLASS[classId];
+}
+
+export function isWeaponProficientForClass(classId: CharacterClassId, weapon: StartingWeapon): boolean {
+  const training = getClassRule(classId).weaponTraining;
+  if (weapon.training === 'simple') return training.some((t) => t.includes('Simple weapons'));
+  if (weapon.training === 'martial') return training.some((t) => t.includes('Martial weapons'));
+  if (weapon.training === 'martial-finesse-or-light') {
+    return training.some((t) => t.includes('Martial weapons') && (t.includes('finesse') || t.includes('light')));
+  }
+  if (weapon.training === 'martial-light') {
+    return training.some((t) => t.includes('Martial weapons') && t.includes('light'));
+  }
+  return false;
+}
+
+export const STARTING_TRAVEL_KIT: InventoryItem[] = [
+  { id: 'healing-potion', name: 'Healing potion', quantity: 2, category: 'consumable', note: 'A red restorative draught in a wax-sealed vial.' },
+  { id: 'provisions', name: 'Food provisions', quantity: 5, category: 'gear', note: 'Five days of travel rations.' },
+  { id: 'vosels', name: 'Vosels', quantity: 118, category: 'coin', note: 'Common global currency.' },
+];
+
+export const WIZARD_SPELLBOOK: InventoryItem = {
+  id: 'spellbook',
+  name: 'Spellbook',
+  quantity: 1,
+  category: 'tool',
+  note: 'A compact working book for prepared spells and arcane notation.',
+};
+
 export function isColdStartingClimate(tempC: number): boolean {
   return tempC <= 5;
 }
 
-export function startingInventoryForClimate(tempC: number) {
+export function startingInventoryForClimate(tempC: number): InventoryItem[] {
   const inventory = isColdStartingClimate(tempC) ? COLD_STARTING_INVENTORY : LIGHT_STARTING_INVENTORY;
   return inventory.map((item) => ({ ...item }));
+}
+
+export function startingInventoryForCharacter(classId: CharacterClassId, tempC: number): InventoryItem[] {
+  const weapon = startingWeaponForClass(classId);
+  const inventory: InventoryItem[] = [
+    ...startingInventoryForClimate(tempC),
+    {
+      id: weapon.id,
+      name: weapon.name,
+      quantity: 1,
+      category: 'weapon',
+      equipped: true,
+      note: `A starting weapon covered by ${getClassRule(classId).name} proficiency.`,
+    },
+    ...STARTING_TRAVEL_KIT.map((item) => ({ ...item })),
+  ];
+  if (classId === 'wizard') inventory.push({ ...WIZARD_SPELLBOOK });
+  return inventory;
 }
 
 export function getClassRule(id: CharacterClassId): ClassRule {

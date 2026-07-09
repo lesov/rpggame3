@@ -3,9 +3,9 @@ import type { WorldData } from '../data/worldLoader';
 import { START_DATE } from '../sim/calendar';
 import { buildPlayerCharacter, validateCharacterInput } from './character';
 import { PREGENERATED_CHARACTERS } from './pregens';
-import { suggestAbilityScores } from './rules2024';
+import { CLASS_RULES, isWeaponProficientForClass, startingWeaponForClass, suggestAbilityScores } from './rules2024';
 import { chooseStartingLocation } from './spawn';
-import type { CharacterBuildInput } from './types';
+import type { CharacterBuildInput, CharacterClassId, OriginBackgroundId, Skill } from './types';
 
 function makeWorld(tempC = 10): WorldData {
   const cells = [
@@ -121,22 +121,61 @@ function validInput(): CharacterBuildInput {
   };
 }
 
+function inputForClass(classId: CharacterClassId): CharacterBuildInput {
+  const classRule = CLASS_RULES.find((rule) => rule.id === classId)!;
+  const backgroundId: OriginBackgroundId = classId === 'wizard' ? 'sage' : 'soldier';
+  return {
+    ...validInput(),
+    classId,
+    backgroundId,
+    abilityScores: suggestAbilityScores(classId, backgroundId),
+    skillProficiencies: classRule.skillChoices.slice(0, classRule.skillCount) as Skill[],
+  };
+}
+
+function inventoryIds(input: CharacterBuildInput, tempC = 10): string[] {
+  return buildPlayerCharacter(input, makeWorld(tempC), START_DATE).inventory.map((item) => item.id);
+}
+
+function expectTravelKit(ids: string[]) {
+  expect(ids).toContain('healing-potion');
+  expect(ids).toContain('provisions');
+  expect(ids).toContain('vosels');
+}
+
 describe('player character creation', () => {
-  it('builds a valid warm-start level 1 character with only robe and sandals', () => {
+  it('builds a valid warm-start level 1 character with clothing, weapon, supplies, and coins', () => {
     const pc = buildPlayerCharacter(validInput(), makeWorld(), START_DATE);
+    const ids = pc.inventory.map((item) => item.id);
     expect(pc.level).toBe(1);
     expect(pc.xp).toBe(0);
     expect(pc.proficiencyBonus).toBe(2);
     expect(pc.maxHp).toBeGreaterThan(1);
-    expect(pc.inventory.map((item) => item.id)).toEqual(['robe', 'sandals']);
-    expect(pc.inventory.some((item) => item.category === 'weapon')).toBe(false);
+    expect(ids).toEqual(['robe', 'sandals', 'longsword', 'healing-potion', 'provisions', 'vosels']);
+    expect(pc.inventory.find((item) => item.id === 'healing-potion')?.quantity).toBe(2);
+    expect(pc.inventory.find((item) => item.id === 'provisions')?.quantity).toBe(5);
+    expect(pc.inventory.find((item) => item.id === 'vosels')?.quantity).toBe(118);
     expect(pc.location.stateId).toBe(1);
   });
 
   it('uses shoes and coat instead when the start climate is cold', () => {
     const pc = buildPlayerCharacter(validInput(), makeWorld(0), START_DATE);
-    expect(pc.inventory.map((item) => item.id)).toEqual(['shoes', 'coat']);
-    expect(pc.inventory.some((item) => item.category === 'weapon')).toBe(false);
+    expect(pc.inventory.map((item) => item.id)).toEqual(['shoes', 'coat', 'longsword', 'healing-potion', 'provisions', 'vosels']);
+  });
+
+  it('gives each class one weapon covered by class proficiency', () => {
+    for (const cls of CLASS_RULES) {
+      const weapon = startingWeaponForClass(cls.id);
+      const ids = inventoryIds(inputForClass(cls.id));
+      expect(isWeaponProficientForClass(cls.id, weapon), cls.id).toBe(true);
+      expect(ids, cls.id).toContain(weapon.id);
+      expectTravelKit(ids);
+    }
+  });
+
+  it('adds a spellbook for wizards only', () => {
+    expect(inventoryIds(inputForClass('wizard'))).toContain('spellbook');
+    expect(inventoryIds(inputForClass('fighter'))).not.toContain('spellbook');
   });
 
   it('rejects missing class skill choices', () => {
@@ -160,8 +199,12 @@ describe('player character creation', () => {
     }));
     for (const input of remapped) {
       const pc = buildPlayerCharacter(input, wd);
+      const ids = pc.inventory.map((item) => item.id);
       expect(pc.name.length).toBeGreaterThan(2);
-      expect(pc.inventory.map((item) => item.id)).toEqual(['robe', 'sandals']);
+      expect(ids).toContain(startingWeaponForClass(input.classId).id);
+      expectTravelKit(ids);
+      if (input.classId === 'wizard') expect(ids).toContain('spellbook');
+      else expect(ids).not.toContain('spellbook');
       expect(pc.minorBonus.name.length).toBeGreaterThan(3);
     }
   });
