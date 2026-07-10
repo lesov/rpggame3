@@ -4,7 +4,16 @@
  * and ambient events.
  */
 import { createContext, useContext, useMemo, useReducer, type ReactNode, type Dispatch } from 'react';
-import { type GameDate, START_DATE, toOrdinal, fromOrdinal } from '../sim/calendar';
+import {
+  type GameDate,
+  type GameTime,
+  START_DATE,
+  START_TIME,
+  MINUTES_PER_DAY,
+  toOrdinal,
+  fromOrdinal,
+  addMinutes,
+} from '../sim/calendar';
 import { fireBetween, ongoingWarsAt, type WorldEvent } from '../sim/events';
 import { ambientEventsBetween } from '../sim/ambient';
 import type { WorldData } from '../data/worldLoader';
@@ -15,8 +24,8 @@ import { createCombat, initialPendingRoll, potionsRemaining } from '../combat/en
 import { getMonster, defaultOpponentFor } from '../combat/monsters';
 import { buildScene } from '../combat/scene';
 
-export type Speed = 'day' | 'week' | 'month';
-export const SPEED_DAYS: Record<Speed, number> = { day: 1, week: 7, month: 30 };
+export type Speed = 'hour' | 'day' | 'week';
+export const SPEED_MINUTES: Record<Speed, number> = { hour: 60, day: MINUTES_PER_DAY, week: 7 * MINUTES_PER_DAY };
 
 export interface Selection {
   cellId: number;
@@ -33,6 +42,7 @@ export interface JumpCommand {
 
 export interface GameState {
   date: GameDate;
+  time: GameTime;
   ord: number;
   feed: WorldEvent[]; // newest first
   playing: boolean;
@@ -48,7 +58,7 @@ export interface GameState {
 }
 
 export type GameAction =
-  | { type: 'advance'; days: number }
+  | { type: 'advance'; minutes: number }
   | { type: 'setPlaying'; playing: boolean }
   | { type: 'setSpeed'; speed: Speed }
   | { type: 'select'; selection: Selection }
@@ -103,6 +113,7 @@ export function initialState(wd: WorldData): GameState {
   }
   return {
     date: START_DATE,
+    time: START_TIME,
     ord,
     feed,
     playing: false,
@@ -123,11 +134,12 @@ function beginCombat(
   wd: WorldData,
   player: PlayerCharacter,
   date: GameDate,
+  time: GameTime,
   monsterId: string | undefined,
   seed: number,
 ): CombatState {
   const loc = player.location;
-  const scene = buildScene(wd, loc.cellId, loc.x, loc.y, date);
+  const scene = buildScene(wd, loc.cellId, loc.x, loc.y, date, time);
   const cell = wd.geometry.cells[loc.cellId];
   const monster = monsterId
     ? getMonster(monsterId)
@@ -139,12 +151,14 @@ export function makeReducer(wd: WorldData) {
   return function reducer(state: GameState, action: GameAction): GameState {
     switch (action.type) {
       case 'advance': {
-        const newOrd = state.ord + Math.max(1, Math.round(action.days));
+        const minutes = Math.max(1, Math.round(action.minutes));
+        const next = addMinutes({ date: state.date, time: state.time }, minutes);
+        const newOrd = toOrdinal(next.date);
         const scripted = fireBetween(wd.scriptedEvents, state.ord, newOrd);
         const ambient = ambientEventsBetween(state.ord, newOrd, wd.ambientCtx);
         const fired = [...scripted, ...ambient].sort((a, b) => a.ord - b.ord);
         const feed = fired.length > 0 ? [...fired.reverse(), ...state.feed].slice(0, FEED_CAP) : state.feed;
-        return { ...state, ord: newOrd, date: fromOrdinal(newOrd), feed };
+        return { ...state, ord: newOrd, date: fromOrdinal(newOrd), time: next.time, feed };
       }
       case 'setPlaying':
         return { ...state, playing: action.playing };
@@ -195,7 +209,7 @@ export function makeReducer(wd: WorldData) {
       case 'startCombat': {
         if (!state.player) return state;
         const seed = action.seed ?? ((Math.random() * 0x7fffffff) | 0);
-        const combat = beginCombat(wd, state.player, state.date, action.monsterId, seed);
+        const combat = beginCombat(wd, state.player, state.date, state.time, action.monsterId, seed);
         return { ...state, screen: 'combat', combat, playing: false };
       }
       case 'setCombat':

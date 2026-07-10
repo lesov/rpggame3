@@ -5,7 +5,7 @@
 import type { WorldData } from '../data/worldLoader';
 import { inspectPlace, findNearby } from '../data/inspect';
 import { weatherAt } from '../sim/weather';
-import { season, toOrdinal, type GameDate } from '../sim/calendar';
+import { season, toOrdinal, type GameDate, type GameTime } from '../sim/calendar';
 import { hash } from '../sim/rng';
 import type { CombatScene } from './types';
 
@@ -27,12 +27,26 @@ export function timeOfDayFor(cellId: number, ord: number): { name: string; light
   return TIME_SLOTS[hash(cellId, ord, 0x71e0) % TIME_SLOTS.length];
 }
 
-export function buildScene(wd: WorldData, cellId: number, x: number, y: number, date: GameDate): CombatScene {
+export function timeOfDayAtClock(time: GameTime): { name: string; light: CombatScene['light'] } {
+  const h = time.hour;
+  if (h < 4) return { name: 'the dead of night', light: 'dark' };
+  if (h < 6) return { name: 'the last black hour before dawn', light: 'dark' };
+  if (h < 7) return { name: 'grey dawn', light: 'dim' };
+  if (h < 10) return { name: 'early morning', light: 'bright' };
+  if (h < 12) return { name: 'mid-morning', light: 'bright' };
+  if (h < 14) return { name: 'midday', light: 'bright' };
+  if (h < 17) return { name: 'mid-afternoon', light: 'bright' };
+  if (h < 19) return { name: 'the long light of late afternoon', light: 'bright' };
+  if (h < 20) return { name: 'dusk', light: 'dim' };
+  return { name: 'full dark, early evening', light: 'dark' };
+}
+
+export function buildScene(wd: WorldData, cellId: number, x: number, y: number, date: GameDate, time?: GameTime): CombatScene {
   const info = inspectPlace(wd, cellId);
   const climate = wd.climateOf(cellId);
   const weather = weatherAt(climate, date);
   const ord = toOrdinal(date);
-  const tod = timeOfDayFor(cellId, ord);
+  const tod = time ? timeOfDayAtClock(time) : timeOfDayFor(cellId, ord);
   const seasonName = season(date, info.lat);
 
   const terrainNotes: string[] = [];
