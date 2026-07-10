@@ -19,6 +19,7 @@ import { ambientEventsBetween } from '../sim/ambient';
 import type { WorldData } from '../data/worldLoader';
 import type { RenderOptions } from '../map/renderer';
 import type { PlayerCharacter } from '../player/types';
+import { travelDestinationLocation, type TravelPlan } from '../player/travel';
 import type { CombatState } from '../combat/types';
 import { createCombat, initialPendingRoll, potionsRemaining } from '../combat/engine';
 import { getMonster, defaultOpponentFor } from '../combat/monsters';
@@ -48,7 +49,7 @@ export interface GameState {
   playing: boolean;
   speed: Speed;
   selection: Selection | null;
-  panelTab: 'events' | 'inspector' | 'character' | 'inventory';
+  panelTab: 'events' | 'inspector' | 'character' | 'inventory' | 'travel';
   options: RenderOptions;
   jump: JumpCommand | null;
   focus: { x: number; y: number } | null;
@@ -66,6 +67,7 @@ export type GameAction =
   | { type: 'setOptions'; options: Partial<RenderOptions> }
   | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number }
   | { type: 'setPlayer'; player: PlayerCharacter }
+  | { type: 'travel'; plan: TravelPlan }
   | { type: 'startCombat'; monsterId?: string; seed?: number }
   | { type: 'setCombat'; combat: CombatState }
   | { type: 'endCombat' };
@@ -147,18 +149,31 @@ function beginCombat(
   return initialPendingRoll(createCombat(player, monster, scene, seed));
 }
 
+function advanceClock(wd: WorldData, state: GameState, minutes: number): GameState {
+  const rounded = Math.max(1, Math.round(minutes));
+  const next = addMinutes({ date: state.date, time: state.time }, rounded);
+  const newOrd = toOrdinal(next.date);
+  const scripted = fireBetween(wd.scriptedEvents, state.ord, newOrd);
+  const ambient = ambientEventsBetween(state.ord, newOrd, wd.ambientCtx);
+  const fired = [...scripted, ...ambient].sort((a, b) => a.ord - b.ord);
+  const feed = fired.length > 0 ? [...fired.reverse(), ...state.feed].slice(0, FEED_CAP) : state.feed;
+  return { ...state, ord: newOrd, date: fromOrdinal(newOrd), time: next.time, feed };
+}
+
+function consumeProvisions(player: PlayerCharacter, amount: number): PlayerCharacter {
+  return {
+    ...player,
+    inventory: player.inventory.map((item) =>
+      item.id === 'provisions' ? { ...item, quantity: Math.max(0, item.quantity - amount) } : item,
+    ),
+  };
+}
+
 export function makeReducer(wd: WorldData) {
   return function reducer(state: GameState, action: GameAction): GameState {
     switch (action.type) {
       case 'advance': {
-        const minutes = Math.max(1, Math.round(action.minutes));
-        const next = addMinutes({ date: state.date, time: state.time }, minutes);
-        const newOrd = toOrdinal(next.date);
-        const scripted = fireBetween(wd.scriptedEvents, state.ord, newOrd);
-        const ambient = ambientEventsBetween(state.ord, newOrd, wd.ambientCtx);
-        const fired = [...scripted, ...ambient].sort((a, b) => a.ord - b.ord);
-        const feed = fired.length > 0 ? [...fired.reverse(), ...state.feed].slice(0, FEED_CAP) : state.feed;
-        return { ...state, ord: newOrd, date: fromOrdinal(newOrd), time: next.time, feed };
+        return advanceClock(wd, state, action.minutes);
       }
       case 'setPlaying':
         return { ...state, playing: action.playing };
@@ -204,6 +219,30 @@ export function makeReducer(wd: WorldData) {
           focus: { x: location.x, y: location.y },
           selection: { cellId: location.cellId, x: location.x, y: location.y },
           panelTab: 'character',
+        };
+      }
+      case 'travel': {
+        if (!state.player) return state;
+        const advanced = advanceClock(wd, state, action.plan.elapsedMinutes);
+        const destination = action.plan.destination;
+        const location = travelDestinationLocation(wd, destination, action.plan.summary);
+        const player = consumeProvisions(
+          { ...state.player, location },
+          action.plan.provisionsNeeded,
+        );
+        const jump: JumpCommand = {
+          seq: (state.jump?.seq ?? 0) + 1,
+          x: location.x,
+          y: location.y,
+          minZoom: 5,
+        };
+        return {
+          ...advanced,
+          player,
+          jump,
+          focus: { x: location.x, y: location.y },
+          selection: { cellId: location.cellId, x: location.x, y: location.y },
+          panelTab: 'travel',
         };
       }
       case 'startCombat': {

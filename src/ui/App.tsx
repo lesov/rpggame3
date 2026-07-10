@@ -8,6 +8,7 @@ import { Inspector } from './Inspector';
 import { CharacterBuilder } from './CharacterBuilder';
 import { InventoryPanel } from './InventoryPanel';
 import { CombatScreen } from './CombatScreen';
+import { TravelPanel } from './TravelPanel';
 
 function LayerToggles() {
   const { state, dispatch } = useGame();
@@ -77,12 +78,19 @@ function SidePanel() {
         >
           Inventory
         </button>
+        <button
+          className={state.panelTab === 'travel' ? 'tab active' : 'tab'}
+          onClick={() => dispatch({ type: 'setTab', tab: 'travel' })}
+        >
+          Travel
+        </button>
       </div>
       <div className="panel-body">
         {state.panelTab === 'events' && <EventFeed />}
         {state.panelTab === 'inspector' && <Inspector />}
         {state.panelTab === 'character' && <CharacterBuilder />}
         {state.panelTab === 'inventory' && <InventoryPanel />}
+        {state.panelTab === 'travel' && <TravelPanel />}
       </div>
     </aside>
   );

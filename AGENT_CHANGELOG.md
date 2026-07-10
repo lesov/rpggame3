@@ -2,6 +2,69 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-10 13:30 CDT - codex - feature/codex/player-travel
+
+- Status: started
+- Summary: Add player travel system with nearby destinations, road/off-road options, day-only travel, biome travel difficulty, and provisions consumption warnings.
+- Files changed: (none yet)
+- Tests run: (none yet)
+- UI review: pending-human-test
+- Blockers or coordination notes: Working on branch per workflow; leaving untracked source world files untouched.
+
+## 2026-07-10 13:35 CDT - codex - feature/codex/player-travel
+
+- Status: ready-for-review
+- Summary: Implemented player travel: nearby land destinations from current player location, road/trail availability detection, off-road biome difficulty sampling, day-only elapsed-time handling, provisions requirement/warning, and travel commit that advances time, moves player, consumes provisions, selects/jumps to destination, and preserves day-event firing.
+- Files changed: AGENT_CHANGELOG.md, src/player/travel.ts, src/player/travel.test.ts, src/ui/TravelPanel.tsx, src/ui/App.tsx, src/ui/store.tsx, src/ui/store.test.ts, src/ui/styles.css
+- Tests run: `npx vitest run src/player/travel.test.ts src/ui/store.test.ts` — 10 tests passed; `npm run build` — passed (with existing Anthropic SDK browser externalization warnings); `npm test` — 118 tests passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: New Travel panel changes visible UI and gameplay flow, so human UI review is required before merge under repository instructions.
+
+## 2026-07-10 14:38 CDT - codex - feature/codex/player-travel
+
+- Status: ready-for-review
+- Summary: Follow-up travel fixes: destination search now expands radius to return at least two reachable options when possible, land travel only offers destinations on the same land feature, unreachable island/over-water destinations are hidden, and port-to-port boat travel is offered when the player starts at or near a port.
+- Files changed: src/player/travel.ts, src/player/travel.test.ts, src/ui/TravelPanel.tsx, src/ui/store.test.ts, AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/player/travel.test.ts src/ui/store.test.ts` — 12 tests passed; `npm run build` — passed (with existing Anthropic SDK browser externalization warnings); `npm test` — 120 tests passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: Travel UI behavior changed; human UI review remains required before merge.
+
+## 2026-07-10 15:03 CDT - codex - feature/codex/player-travel
+
+- Status: ready-for-review
+- Summary: Filtered travel destinations down to true point destinations only. Named geography/features such as mountain ranges and biome regions remain available to the inspector, but no longer appear as valid travel targets.
+- Files changed: src/player/travel.ts, src/player/travel.test.ts, AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/player/travel.test.ts src/ui/store.test.ts` — 13 tests passed; `npm run build` — passed (with existing Anthropic SDK browser externalization warnings); `npm test` — 121 tests passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: Travel destination list changed; human UI review remains required before merge.
+
+## 2026-07-10 15:28 CDT - codex - feature/codex/player-travel
+
+- Status: ready-for-review
+- Summary: Port-city travel now reserves a separate broader boat-destination pool. When the player is at or near a port, up to eight boat-only ports within 900 miles are listed in addition to normal nearby land destinations, preventing local land points from crowding out close island ports such as Oladar from Domasalyesi.
+- Files changed: src/player/travel.ts, src/player/travel.test.ts, AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/player/travel.test.ts src/ui/store.test.ts` — 15 tests passed; `npm run build` — passed (with existing Anthropic SDK browser externalization warnings); `npm test` — 123 tests passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: Travel destination list changed for port locations; human UI review remains required before merge.
+
+## 2026-07-10 15:35 CDT - codex - feature/codex/player-travel
+
+- Status: ready-for-review
+- Summary: Boat travel now uses continuous crewed sailing time instead of daylight-only walking time, and the route summary labels distance, active hours, and pace by travel mode. Sea routes show sailing hours and boat passage pace; roads, trails, and off-road travel retain their own pace references.
+- Files changed: src/player/travel.ts, src/player/travel.test.ts, src/ui/TravelPanel.tsx, AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/player/travel.test.ts src/ui/store.test.ts` — 16 tests passed; `npm run build` — passed (with existing Anthropic SDK browser externalization warnings); `npm test` — 124 tests passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: Travel route summary changed visibly; human UI review remains required before merge.
+
+## 2026-07-10 15:41 CDT - codex - feature/codex/player-travel
+
+- Status: approved
+- Summary: Human approver tested the player travel UI and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/player/travel.test.ts src/ui/store.test.ts` — 16 tests passed as of previous entry; `npm run build` — passed as of previous entry; `npm test` — 124 tests passed as of previous entry.
+- UI review: approved-by-human (2026-07-10)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
 ## 2026-07-10 11:52 CDT - codex - feature/codex/player-reputations
 
 - Status: started

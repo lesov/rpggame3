@@ -4,6 +4,8 @@ import path from 'node:path';
 import { buildWorldData, type WorldData } from '../data/worldLoader';
 import { MINUTES_PER_DAY, START_DATE, START_TIME, toOrdinal } from '../sim/calendar';
 import { initialState, makeReducer } from './store';
+import { makeTestCharacter } from '../combat/fixtures';
+import { planTravel, type TravelDestination } from '../player/travel';
 
 let wd: WorldData;
 
@@ -47,5 +49,44 @@ describe('game clock state', () => {
     expect(next.date).toEqual({ year: 1181, month: 1, day: 8 });
     expect(next.ord).toBe(state.ord + 7);
     expect(next.time).toEqual(START_TIME);
+  });
+
+  it('commits travel by advancing time, moving the player, and consuming provisions', () => {
+    const reducer = makeReducer(wd);
+    const origin = wd.world.burgs[0];
+    const target = wd.world.burgs[1];
+    const player = {
+      ...makeTestCharacter('fighter'),
+      location: {
+        cellId: origin.cell,
+        x: origin.x,
+        y: origin.y,
+        stateId: origin.state,
+        stateName: wd.stateById.get(origin.state)?.name ?? 'Test',
+        placeName: origin.name,
+        reason: 'test',
+      },
+      inventory: [{ id: 'provisions', name: 'Food provisions', quantity: 99, category: 'gear' as const }],
+    };
+    const destination: TravelDestination = {
+      id: 'target',
+      name: target.name,
+      detail: 'settlement',
+      kind: 'burg',
+      x: target.x,
+      y: target.y,
+      cellId: target.cell,
+      distanceMi: wd.distanceMi(origin.x, origin.y, target.x, target.y),
+      landReachable: true,
+      boatReachable: false,
+    };
+    const withPlayer = reducer(initialState(wd), { type: 'setPlayer', player });
+    const plan = planTravel(wd, player, destination, 'offroad', false, withPlayer.time);
+    const next = reducer(withPlayer, { type: 'travel', plan });
+    expect(next.player?.location.cellId).toBe(target.cell);
+    expect(next.selection?.cellId).toBe(target.cell);
+    expect(next.jump?.x).toBe(target.x);
+    expect(next.player?.inventory.find((item) => item.id === 'provisions')?.quantity).toBe(99 - plan.provisionsNeeded);
+    expect(next.time).not.toEqual(withPlayer.time);
   });
 });
