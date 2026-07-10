@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-10 - claude-fable-5 - feature/claude-fable-5/travel-encounters
+
+- Status: started
+- Summary: Travel encounters — a two-question Poisson hazard model layered onto the existing travel system. Question 1 (λ, frequency) reads only actor-density inputs (biome/habitability, remoteness/pop, road tier, time of day, hostile-marker proximity, active + post-war zones, season/weather); Question 2 (P(hostile|encounter)) reads only disposition inputs (reputation, state stability/alert, diplomacy-vs-nationality, faith/culture match, actor kind). Multiplicative clamped Poisson (never pins to 100%, composes cleanly, scales to any duration) plus a pity-timer pacing governor. First hit interrupts travel; hostile routes to the combat engine, non-hostile to a choice modal; travel resumes on the remaining leg. Pre-departure danger read in the TravelPanel. Plan approved by human ("proceed as written").
+- Files changed: AGENT_CHANGELOG.md (this entry); implementation to follow under src/travel/encounter/ + UI.
+- Tests run: (none yet)
+- UI review: pending-human-test
+- Blockers or coordination notes: Builds on codex's travel system (src/player/travel.ts, TravelPanel) — reads planTravel output and wraps the store `travel` action; no changes to travel pathfinding itself. Pure model in src/travel/encounter/ mirrors src/combat. No merge to main without explicit human approval.
+
 ## 2026-07-10 13:30 CDT - codex - feature/codex/player-travel
 
 - Status: started
