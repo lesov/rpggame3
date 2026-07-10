@@ -141,6 +141,22 @@ export interface PlayerLocation {
   reason: string;
 }
 
+export type ReputationKind = 'culture' | 'religion';
+export type ReputationLabel = 'Hated' | 'Hostile' | 'Wary' | 'Neutral' | 'Favored' | 'Revered';
+
+export interface ReputationEntry {
+  kind: ReputationKind;
+  id: number;
+  name: string;
+  score: number;
+  label: ReputationLabel;
+}
+
+export interface PlayerReputations {
+  cultures: ReputationEntry[];
+  religions: ReputationEntry[];
+}
+
 export interface PlayerCharacter {
   id: string;
   name: string;
@@ -158,6 +174,7 @@ export interface PlayerCharacter {
   nationalityName: string;
   religionId: number;
   religionName: string;
+  cultureId?: number;
   cultureName?: string;
   abilityScores: AbilityScores;
   abilityModifiers: AbilityScores;
@@ -174,6 +191,7 @@ export interface PlayerCharacter {
   powerExplanation: string;
   minorBonus: BackstoryRule['minorBonus'];
   inventory: InventoryItem[];
+  reputations: PlayerReputations;
   location: PlayerLocation;
   createdAt: GameDate;
 }

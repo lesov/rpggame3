@@ -3,6 +3,7 @@ import type { WorldData } from '../data/worldLoader';
 import { START_DATE } from '../sim/calendar';
 import { buildPlayerCharacter, validateCharacterInput } from './character';
 import { PREGENERATED_CHARACTERS } from './pregens';
+import { reputationLabel } from './reputation';
 import { CLASS_RULES, isWeaponProficientForClass, startingWeaponForClass, suggestAbilityScores } from './rules2024';
 import { chooseStartingLocation } from './spawn';
 import type { CharacterBuildInput, CharacterClassId, OriginBackgroundId, Skill } from './types';
@@ -144,6 +145,15 @@ function expectTravelKit(ids: string[]) {
 }
 
 describe('player character creation', () => {
+  it('maps reputation score bands to labels', () => {
+    expect(reputationLabel(-90)).toBe('Hated');
+    expect(reputationLabel(-50)).toBe('Hostile');
+    expect(reputationLabel(-10)).toBe('Wary');
+    expect(reputationLabel(0)).toBe('Neutral');
+    expect(reputationLabel(40)).toBe('Favored');
+    expect(reputationLabel(80)).toBe('Revered');
+  });
+
   it('builds a valid warm-start level 1 character with clothing, weapon, supplies, and coins', () => {
     const pc = buildPlayerCharacter(validInput(), makeWorld(), START_DATE);
     const ids = pc.inventory.map((item) => item.id);
@@ -155,7 +165,19 @@ describe('player character creation', () => {
     expect(pc.inventory.find((item) => item.id === 'healing-potion')?.quantity).toBe(2);
     expect(pc.inventory.find((item) => item.id === 'provisions')?.quantity).toBe(5);
     expect(pc.inventory.find((item) => item.id === 'vosels')?.quantity).toBe(118);
+    expect(pc.cultureId).toBe(1);
     expect(pc.location.stateId).toBe(1);
+  });
+
+  it('starts neutral with every loaded culture and religion', () => {
+    const wd = makeWorld();
+    const pc = buildPlayerCharacter(validInput(), wd, START_DATE);
+    expect(pc.reputations.cultures.map((entry) => entry.id)).toEqual([1, 2]);
+    expect(pc.reputations.religions.map((entry) => entry.id)).toEqual([1, 2]);
+    for (const entry of [...pc.reputations.cultures, ...pc.reputations.religions]) {
+      expect(entry.score).toBe(0);
+      expect(entry.label).toBe('Neutral');
+    }
   });
 
   it('uses shoes and coat instead when the start climate is cold', () => {
@@ -203,6 +225,9 @@ describe('player character creation', () => {
       expect(pc.name.length).toBeGreaterThan(2);
       expect(ids).toContain(startingWeaponForClass(input.classId).id);
       expectTravelKit(ids);
+      expect(pc.reputations.cultures).toHaveLength(wd.world.cultures.length);
+      expect(pc.reputations.religions).toHaveLength(wd.world.religions.filter((religion) => religion.i > 0).length);
+      expect([...pc.reputations.cultures, ...pc.reputations.religions].every((entry) => entry.label === 'Neutral')).toBe(true);
       if (input.classId === 'wizard') expect(ids).toContain('spellbook');
       else expect(ids).not.toContain('spellbook');
       expect(pc.minorBonus.name.length).toBeGreaterThan(3);

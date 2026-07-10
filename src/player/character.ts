@@ -10,6 +10,7 @@ import {
   validateAbilityScores,
 } from './rules2024';
 import { chooseStartingLocation } from './spawn';
+import { buildNeutralReputations } from './reputation';
 import type { CharacterBuildInput, CharacterClassId, PlayerCharacter, Skill } from './types';
 
 function slug(text: string): string {
@@ -106,6 +107,7 @@ export function buildPlayerCharacter(
     nationalityName: state.fullName ?? state.name,
     religionId: religion.i,
     religionName: religion.name,
+    cultureId: culture?.i,
     cultureName: culture?.name,
     abilityScores: input.abilityScores,
     abilityModifiers: mods,
@@ -122,6 +124,7 @@ export function buildPlayerCharacter(
     powerExplanation: trainingLine,
     minorBonus: backstory.minorBonus,
     inventory: startingInventoryForCharacter(cls.id, startClimate.temp),
+    reputations: buildNeutralReputations(wd),
     location,
     createdAt,
   };

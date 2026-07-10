@@ -40,6 +40,10 @@ export function makeTestCharacter(classId: CharacterClassId = 'fighter'): Player
     powerExplanation: 'Training.',
     minorBonus: { name: 'Test bonus', description: 'None.' },
     inventory: startingInventoryForCharacter(classId, 10),
+    reputations: {
+      cultures: [{ kind: 'culture', id: 1, name: 'Litbarow (Gnome)', score: 0, label: 'Neutral' }],
+      religions: [{ kind: 'religion', id: 2, name: 'Pudrockan Church', score: 0, label: 'Neutral' }],
+    },
     location: {
       cellId: 5000,
       x: 761,
