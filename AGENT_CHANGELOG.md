@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-09 22:25 CDT - codex - feature/codex/game-clock
+
+- Status: started
+- Summary: Add 24-hour clock support to game time so later mechanics can operate below day granularity.
+- Files changed: (none yet)
+- Tests run: (none yet)
+- UI review: pending-human-test
+- Blockers or coordination notes: Working on branch per workflow; leaving untracked source world files untouched. Main includes the combat-screen merge, so clock work must preserve combat scene integration.
+
+## 2026-07-09 22:29 CDT - codex - feature/codex/game-clock
+
+- Status: ready-for-review
+- Summary: Implemented 24-hour game clock: calendar minute utilities and formatting, reducer minute-based advancement with day-event firing only on crossed day ordinals, updated time controls with hour/rest/day/week/month/year advances, and combat scenes now use actual game clock when combat starts.
+- Files changed: AGENT_CHANGELOG.md, src/sim/calendar.ts, src/sim/calendar.test.ts, src/ui/store.tsx, src/ui/store.test.ts, src/ui/TimeControls.tsx, src/ui/styles.css, src/combat/scene.ts, src/combat/scene.test.ts
+- Tests run: `npx vitest run src/sim/calendar.test.ts src/ui/store.test.ts src/combat/scene.test.ts` — 16 tests passed; `npm run build` — passed (with existing Anthropic SDK browser externalization warnings); `npm test` — 110 tests passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: Time controls changed visibly, so human UI review is required before merge under repository instructions.
+
+## 2026-07-09 22:51 CDT - codex - feature/codex/game-clock
+
+- Status: approved
+- Summary: Human approver tested the 24-hour clock UI and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/sim/calendar.test.ts src/ui/store.test.ts src/combat/scene.test.ts` — 16 tests passed as of previous entry; `npm run build` — passed as of previous entry; `npm test` — 110 tests passed as of previous entry.
+- UI review: approved-by-human (2026-07-09)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
 ## 2026-07-09 - claude-fable-5 - feature/claude-fable-5/combat-screen
 
 - Status: approved / merged

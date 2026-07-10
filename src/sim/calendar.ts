@@ -10,12 +10,25 @@ export interface GameDate {
   day: number; // 1..monthLength
 }
 
+export interface GameTime {
+  hour: number; // 0..23
+  minute: number; // 0..59
+}
+
+export interface GameDateTime {
+  date: GameDate;
+  time: GameTime;
+}
+
 export const MONTH_LENGTHS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 export const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 export const DAYS_PER_YEAR = 365;
+export const HOURS_PER_DAY = 24;
+export const MINUTES_PER_HOUR = 60;
+export const MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR;
 
 const MONTH_START = MONTH_LENGTHS.reduce<number[]>((acc, _len, i) => {
   acc.push(i === 0 ? 0 : acc[i - 1] + MONTH_LENGTHS[i - 1]);
@@ -23,6 +36,8 @@ const MONTH_START = MONTH_LENGTHS.reduce<number[]>((acc, _len, i) => {
 }, []);
 
 export const START_DATE: GameDate = { year: 1181, month: 1, day: 1 };
+export const START_TIME: GameTime = { hour: 8, minute: 0 };
+export const START_DATE_TIME: GameDateTime = { date: START_DATE, time: START_TIME };
 
 /** Day-of-year, 1..365. */
 export function dayOfYear(d: GameDate): number {
@@ -44,6 +59,42 @@ export function fromOrdinal(ord: number): GameDate {
 
 export function addDays(d: GameDate, days: number): GameDate {
   return fromOrdinal(toOrdinal(d) + days);
+}
+
+export function normalizeTime(totalMinutes: number): { dayOffset: number; time: GameTime } {
+  const dayOffset = Math.floor(totalMinutes / MINUTES_PER_DAY);
+  const minuteOfDay = ((totalMinutes % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  return {
+    dayOffset,
+    time: {
+      hour: Math.floor(minuteOfDay / MINUTES_PER_HOUR),
+      minute: minuteOfDay % MINUTES_PER_HOUR,
+    },
+  };
+}
+
+export function minuteOfDay(time: GameTime): number {
+  return time.hour * MINUTES_PER_HOUR + time.minute;
+}
+
+export function toMinuteOrdinal(dt: GameDateTime): number {
+  return toOrdinal(dt.date) * MINUTES_PER_DAY + minuteOfDay(dt.time);
+}
+
+export function fromMinuteOrdinal(minuteOrd: number): GameDateTime {
+  const dayOrd = Math.floor(minuteOrd / MINUTES_PER_DAY);
+  const minute = ((minuteOrd % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  return {
+    date: fromOrdinal(dayOrd),
+    time: {
+      hour: Math.floor(minute / MINUTES_PER_HOUR),
+      minute: minute % MINUTES_PER_HOUR,
+    },
+  };
+}
+
+export function addMinutes(dt: GameDateTime, minutes: number): GameDateTime {
+  return fromMinuteOrdinal(toMinuteOrdinal(dt) + minutes);
 }
 
 export function addMonths(d: GameDate, months: number): GameDate {
@@ -80,4 +131,12 @@ export function formatDate(d: GameDate): string {
 
 export function formatDateShort(d: GameDate): string {
   return `${d.day} ${MONTH_NAMES[d.month - 1].slice(0, 3)} ${d.year}`;
+}
+
+export function formatTime24(time: GameTime): string {
+  return `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
+}
+
+export function formatDateTime(dt: GameDateTime): string {
+  return `${formatDate(dt.date)} · ${formatTime24(dt.time)}`;
 }

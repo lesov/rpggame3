@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { buildWorldData, type WorldData } from '../data/worldLoader';
-import { buildScene, timeOfDayFor } from './scene';
+import { buildScene, timeOfDayAtClock, timeOfDayFor } from './scene';
 import { toOrdinal } from '../sim/calendar';
 
 let wd: WorldData;
@@ -43,6 +43,17 @@ describe('combat scene builder', () => {
       expect(['bright', 'dim', 'dark']).toContain(tod.light);
     }
     expect(names.size).toBeGreaterThan(3);
+  });
+
+  it('uses actual game clock when one is provided', () => {
+    expect(timeOfDayAtClock({ hour: 2, minute: 0 })).toEqual({ name: 'the dead of night', light: 'dark' });
+    expect(timeOfDayAtClock({ hour: 6, minute: 30 })).toEqual({ name: 'grey dawn', light: 'dim' });
+    expect(timeOfDayAtClock({ hour: 12, minute: 0 })).toEqual({ name: 'midday', light: 'bright' });
+    expect(timeOfDayAtClock({ hour: 19, minute: 30 })).toEqual({ name: 'dusk', light: 'dim' });
+    const cell = wd.geometry.cells[5000];
+    const scene = buildScene(wd, cell.i, cell.p[0], cell.p[1], date, { hour: 2, minute: 15 });
+    expect(scene.timeOfDay).toBe('the dead of night');
+    expect(scene.light).toBe('dark');
   });
 
   it('dims bright daylight under overcast or precipitation', () => {
