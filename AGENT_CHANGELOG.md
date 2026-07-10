@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-10 11:52 CDT - codex - feature/codex/player-reputations
+
+- Status: started
+- Summary: Add player reputation ledgers with all cultures and religions initialized neutral at game start.
+- Files changed: (none yet)
+- Tests run: (none yet)
+- UI review: pending-human-test
+- Blockers or coordination notes: Working on branch per workflow; leaving untracked source world files untouched.
+
+## 2026-07-10 11:53 CDT - codex - feature/codex/player-reputations
+
+- Status: ready-for-review
+- Summary: Player characters now include culture and religion reputation ledgers initialized from loaded world data. Every culture and religion starts at score 0 / Neutral, and pregenerated characters receive the same neutral ledgers through the shared character build path. Character sheet shows compact reputation counts and origin/faith examples.
+- Files changed: AGENT_CHANGELOG.md, src/player/types.ts, src/player/reputation.ts, src/player/character.ts, src/player/character.test.ts, src/ui/CharacterBuilder.tsx, src/combat/fixtures.ts
+- Tests run: `npx vitest run src/player/character.test.ts` — 9 tests passed; `npm run build` — passed (with existing Anthropic SDK browser externalization warnings); `npm test` — 112 tests passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: Character sheet display changed, so human UI review is required before merge under repository instructions.
+
+## 2026-07-10 12:12 CDT - codex - feature/codex/player-reputations
+
+- Status: approved
+- Summary: Human approver tested the player reputation display and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/player/character.test.ts` — 9 tests passed as of previous entry; `npm run build` — passed as of previous entry; `npm test` — 112 tests passed as of previous entry.
+- UI review: approved-by-human (2026-07-10)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
 ## 2026-07-09 22:25 CDT - codex - feature/codex/game-clock
 
 - Status: started

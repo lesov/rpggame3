@@ -13,6 +13,7 @@ import {
   getSpeciesRule,
   suggestAbilityScores,
 } from '../player/rules2024';
+import { findReputation } from '../player/reputation';
 import { ABILITIES, type Ability, type CharacterBuildInput, type CharacterClassId, type OriginBackgroundId, type PlayerCharacter, type Skill, type SpeciesId, type BackstoryId } from '../player/types';
 import { useGame } from './store';
 
@@ -31,6 +32,10 @@ function defaultSkills(classId: CharacterClassId): Skill[] {
 
 function CharacterSheet({ player }: { player: PlayerCharacter }) {
   const { dispatch } = useGame();
+  const originCulture = player.cultureId
+    ? findReputation(player.reputations.cultures, player.cultureId)
+    : undefined;
+  const chosenReligion = findReputation(player.reputations.religions, player.religionId);
   return (
     <div className="character-panel">
       <button className="primary-action battle-test-btn" onClick={() => dispatch({ type: 'startCombat' })}>
@@ -76,6 +81,14 @@ function CharacterSheet({ player }: { player: PlayerCharacter }) {
         <h3>Background</h3>
         <p className="story-text">{player.story}</p>
         <div className="kv"><span>Bonus</span><span>{player.minorBonus.name}: {player.minorBonus.description}</span></div>
+      </div>
+
+      <div className="section">
+        <h3>Reputation</h3>
+        <div className="kv"><span>Cultures</span><span>{player.reputations.cultures.length} known · all Neutral</span></div>
+        <div className="kv"><span>Religions</span><span>{player.reputations.religions.length} known · all Neutral</span></div>
+        {originCulture && <div className="kv"><span>Origin culture</span><span>{originCulture.name}: {originCulture.label} ({originCulture.score})</span></div>}
+        {chosenReligion && <div className="kv"><span>Chosen faith</span><span>{chosenReligion.name}: {chosenReligion.label} ({chosenReligion.score})</span></div>}
       </div>
 
       <div className="section">
