@@ -51,50 +51,94 @@ function locusOf(scene: CombatScene): string {
   return scene.placeName || `the open ${scene.biome.toLowerCase()}`;
 }
 
-function hpNote(hpAfter: number, hpMax: number, name: string): string {
-  if (hpAfter <= 0) return `${name} goes down.`;
-  const frac = hpAfter / hpMax;
-  if (frac <= 0.25) return `${name} is barely standing (${hpAfter}/${hpMax} HP).`;
-  if (frac <= 0.5) return `${name} is badly hurt (${hpAfter}/${hpMax} HP).`;
-  return `${name} has ${hpAfter}/${hpMax} HP left.`;
+// ---------------------------------------------------------------------------
+// Second-person references. The player is "you"; the foe keeps its shortName
+// ("the wolf"). Raw numbers live in the calculation block, not the prose.
+
+function isYou(name: string, s: CombatState): boolean {
+  return name === s.player.name;
+}
+function subj(name: string, s: CombatState): string {
+  return isYou(name, s) ? 'you' : s.enemy.shortName;
+}
+function poss(name: string, s: CombatState): string {
+  return isYou(name, s) ? 'your' : `${s.enemy.shortName}'s`;
+}
+
+const SEVERITY_WEIGHT: Record<string, string> = {
+  graze: 'a shallow, stinging graze',
+  wound: 'a solid, honest wound',
+  'deep wound': 'a deep, ugly wound',
+  'grievous wound': 'a savage, crippling wound',
+};
+
+/** How the struck combatant is left, qualitatively — no numbers. */
+function condClause(e: Extract<CombatEvent, { kind: 'damage' }>, s: CombatState): string {
+  const you = isYou(e.defender, s);
+  if (e.dropped) return you ? ' Your legs go, and you fall.' : ` ${cap(s.enemy.shortName)} folds and goes down.`;
+  const frac = e.hpAfter / e.hpMax;
+  if (frac <= 0.25) return you ? ' You can barely keep your feet.' : ` ${cap(s.enemy.shortName)} can barely stay standing.`;
+  if (frac <= 0.5) return you ? ' You reel, badly hurt.' : ` ${cap(s.enemy.shortName)} staggers, badly hurt.`;
+  if (frac <= 0.75) return you ? ' It bites deep, and it stays with you.' : ` ${cap(s.enemy.shortName)} feels that one.`;
+  return '';
 }
 
 export function plainLine(e: CombatEvent, s: CombatState): string {
   switch (e.kind) {
     case 'attack': {
-      if (e.outcome === 'miss' || e.outcome === 'fumble') {
-        return `${e.attacker}'s ${e.attackName.toLowerCase()} misses ${e.defender}${e.outcome === 'fumble' ? ' badly' : ''}.`;
-      }
-      return `${e.attacker}'s ${e.attackName.toLowerCase()} connects${e.outcome === 'crit' ? ' — a critical hit' : ''}.`;
+      // A connecting hit is narrated by the damage event that follows it.
+      if (e.outcome === 'hit' || e.outcome === 'crit') return '';
+      const atk = `${cap(poss(e.attacker, s))} ${e.attackName.toLowerCase()}`;
+      if (e.outcome === 'fumble') return `${atk} goes wild and finds nothing but air.`;
+      const defYou = isYou(e.defender, s);
+      const dodges = defYou
+        ? ['you turn it aside at the last moment', 'you throw yourself clear', 'you catch it on your guard and shove it off', 'you give ground and it finds only air']
+        : [`${s.enemy.shortName} twists away from it`, `${s.enemy.shortName} rolls with it and comes up unhurt`, `it skitters back out of reach`, `it ducks under the swing`];
+      return `${atk} comes in hard, but ${dodges[e.roll.total % dodges.length]}.`;
     }
     case 'damage': {
-      const injury = e.injury ? ` — a ${e.injury.severity} to the ${e.injury.location}` : '';
-      const resist = e.resisted ? ' (halved by rage)' : '';
-      return `${e.attackName} ${e.attackVerb} ${e.defender} for ${e.amount} damage${resist}${injury}. ${hpNote(e.hpAfter, e.hpMax, e.defender)}`;
+      const weight = e.injury ? SEVERITY_WEIGHT[e.injury.severity] ?? 'a wound' : 'a wound';
+      const loc = e.injury ? `${poss(e.defender, s)} ${e.injury.location}` : subj(e.defender, s);
+      const resist = e.resisted ? ' — the rage soaks the worst of it, but' : ' —';
+      return `${cap(poss(e.attacker, s))} ${e.attackName.toLowerCase()} ${e.attackVerb} ${loc}${resist} ${weight}.${condClause(e, s)}`;
     }
     case 'save':
-      return `${e.defender} ${e.success ? 'resists' : 'fails to resist'} ${e.attackName} (DC ${e.dc}).`;
+      return isYou(e.defender, s)
+        ? `You brace and ${e.success ? 'ride out' : 'are caught full by'} ${e.attackName.toLowerCase()}.`
+        : `${cap(s.enemy.shortName)} ${e.success ? 'shrugs off' : 'is caught full by'} ${e.attackName.toLowerCase()}.`;
     case 'heal': {
       const n = e.woundsTended.length;
-      const wounds = n > 0 ? ` The ${e.woundsTended.join(' and the ')} ${n === 1 ? 'closes' : 'close'} over.` : '';
-      return `${e.actor} recovers ${e.amount} HP from ${e.source} (${e.hpAfter}/${e.hpMax}).${wounds}`;
+      const opening =
+        {
+          'Healing potion': 'You tip back the potion and warmth spreads through you',
+          'Second Wind': 'You drag in a breath and find a second wind',
+          'Cure Wounds': 'You call up the light and the pain recedes',
+          'Lay on Hands': 'You lay a hand to the hurt and will it closed',
+        }[e.source] ?? 'You gather yourself and recover';
+      const wounds = n > 0 ? `; the ${e.woundsTended.join(' and the ')} ${n === 1 ? 'closes' : 'close'} over` : '';
+      return `${opening}${wounds}.`;
     }
     case 'feature': {
-      if (e.success === false) return `${e.actor}'s ${e.feature.toLowerCase()} fails — ${e.detail ?? ''}`.trim();
-      return `${e.actor} uses ${e.feature}${e.detail ? ` — ${e.detail}` : ''}.`;
+      if (e.feature === 'Rage') return 'You let the rage take you — the cold, the fear, all of it narrowing down to red.';
+      if (e.feature === 'Feint')
+        return e.success
+          ? 'You sell the opening and it buys — an unguarded line opens up.'
+          : 'You feint, but it reads you and does not bite.';
+      if (e.success === false) return `Your ${e.feature.toLowerCase()} comes to nothing.`;
+      return `You bring ${e.feature} to bear.`;
     }
     case 'dodge':
-      return `${e.actor} gives ground, weaving and covering — attacks against ${e.actor === s.player.name ? 'them' : 'it'} have disadvantage.`;
+      return 'You stop pressing and cover up, weaving, giving ground — anything that comes at you now has to earn it.';
     case 'escape':
       return e.success
-        ? `${e.actor} breaks away and runs — the fight is over.`
-        : `${e.actor} tries to break away (${e.chancePct}% odds) and fails.`;
+        ? 'You break contact and run, and this time nothing follows.'
+        : 'You try to tear yourself free — and cannot; it stays right on you.';
     case 'morale':
       return e.fled
-        ? `${e.actor}'s nerve breaks — it flees the fight.`
-        : `${e.actor} is badly hurt but holds its ground.`;
+        ? `${cap(s.enemy.shortName)} has had enough — its nerve breaks and it bolts.`
+        : `${cap(s.enemy.shortName)} is badly hurt, but it steadies and holds.`;
     case 'initiative':
-      return `${e.firstName} moves first.`;
+      return isYou(e.firstName, s) ? 'You move first.' : `${cap(s.enemy.shortName)} is quicker off the mark.`;
     default:
       return '';
   }

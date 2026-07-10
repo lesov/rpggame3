@@ -31,8 +31,8 @@ function withInjury(): CombatState {
 const damageEvent: CombatEvent = {
   kind: 'damage',
   seq: 1,
-  attacker: 'the wolf',
-  defender: 'you',
+  attacker: 'Wolf',
+  defender: 'Testovar',
   attackName: 'Bite',
   attackVerb: 'tears into',
   roll: { label: 'Bite damage', formula: '1d4+2', rolls: [3], modifier: 2, total: 5 },
@@ -84,8 +84,10 @@ describe('PlainNarrator', () => {
     const intro = await collect(n.intro(baseState()));
     expect(intro).toContain('Rhakorash Savanna');
     const line = await collect(n.narrate([damageEvent], withInjury()));
-    expect(line).toContain('5 damage');
+    // Prose, not a stat dump: the wound location is named, raw numbers are not.
     expect(line).toContain('left forearm');
+    expect(line).not.toMatch(/\d+ damage/);
+    expect(line.toLowerCase()).toContain('wound');
   });
 
   it('outro mentions untended injuries on defeat', async () => {
@@ -153,8 +155,8 @@ describe('ClaudeNarrator', () => {
     };
     const n = new ClaudeNarrator(client);
     const out = await collect(n.narrate([damageEvent], withInjury()));
-    // plain line format
-    expect(out).toContain('5 damage');
+    // Degrades to the plain prose line (which names the wound).
     expect(out).toContain('left forearm');
+    expect(out.toLowerCase()).toContain('wound');
   });
 });
