@@ -30,8 +30,12 @@ function defaultSkills(classId: CharacterClassId): Skill[] {
 }
 
 function CharacterSheet({ player }: { player: PlayerCharacter }) {
+  const { dispatch } = useGame();
   return (
     <div className="character-panel">
+      <button className="primary-action battle-test-btn" onClick={() => dispatch({ type: 'startCombat' })}>
+        ⚔ Test battle
+      </button>
       <div className="section character-summary">
         <h3>{player.name}</h3>
         <div className="kv"><span>Level</span><span>1 {player.speciesName} {player.className}</span></div>
@@ -140,6 +144,8 @@ export function CharacterBuilder() {
     try {
       const pc = buildPlayerCharacter(buildInput, wd, state.date);
       dispatch({ type: 'setPlayer', player: pc });
+      // The starting character is thrown straight into a battle test.
+      dispatch({ type: 'startCombat' });
       setError(null);
     } catch (e) {
       setError(String(e instanceof Error ? e.message : e));

@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-09 - claude-fable-5 - feature/claude-fable-5/combat-screen
+
+- Status: approved / merged
+- Summary: Human approver tested the combat milestone in the live UI and stated their check is finished, explicitly authorizing the merge into main ("merge and I will push manually afterwards"). Merged feature/claude-fable-5/combat-screen into main with a --no-ff merge commit. Push deferred to the human per their instruction; no release tag requested.
+- Files changed: AGENT_CHANGELOG.md (this entry); merge of the combat branch (combat engine + narrator + full UI, see prior entries).
+- Tests run: `npx vitest run` — 103 passed; `npx tsc --noEmit` — clean; `npm run build` — passed (all as of the ready-for-review entry).
+- UI review: approved-by-human (2026-07-09)
+- Blockers or coordination notes: main is merged locally but NOT pushed — the human will push manually. Do not push, re-tag, or amend main.
+
+## 2026-07-09 - claude-fable-5 - feature/claude-fable-5/combat-screen
+
+- Status: ready-for-review
+- Summary: Combat milestone complete. Dedicated full-screen D&D 2024 combat with click-to-roll dice and full calculation breakdowns for every roll (player and enemy), initiative-ordered turns, deterministic seeded resolution, damage→injury severity with a per-combatant injury ledger (named wounds referenced on healing and in the aftermath), exhaustion tiers, morale checks, escape as an opposed check with the exact success % shown before committing, in-combat healing-potion use (persisted to inventory), and per-class signature kits (Second Wind, Rage, Feint+Sneak Attack, Martial Arts, cantrips, Cure Wounds / Lay on Hands). Scene integrates biome, weather, temperature, wind, time of day, and season from the world sim. Narration is streamed from Claude Haiku 4.5 (one conversation per battle, style = mature/visceral/grounded; scene sheet + combatant sheets + per-beat structured facts incl. injury ledgers) with a plain factual narrator fallback when no API key is set or the API errors — combat never blocks on the network. Battle test auto-starts on character creation; a "⚔ Test battle" button re-enters from the Character tab. No permadeath: defeat ends with an aftermath scene plus Replay / opponent picker (grouped easy/fair/hard) / Return to map.
+- Files changed: package.json + package-lock.json (+@anthropic-ai/sdk, +@types/node), tsconfig.json (lib ES2023, types +node), src/combat/{types,dice,weapons,kits,monsters,scene,engine,fixtures}.ts, src/combat/narrator/{types,plain,prompt,claude}.ts, src/combat/{dice,kits,engine,scene}.test.ts + src/combat/narrator/narrator.test.ts, src/ui/{store.tsx,App.tsx,CharacterBuilder.tsx,CombatScreen.tsx,ApiKeyBar.tsx,combatLog.ts,combatLog.test.ts,styles.css}.
+- Tests run: `npx vitest run` — 103 tests passed (14 files); `npx tsc --noEmit` — clean; `npm run build` — passed. Headless Playwright smoke (plain narrator, no key): world map renders, time advances (1 Jan → 1 Apr 1181), feed populates (6 items), map click opens inspector; character creation auto-starts combat; scene header renders; initiative + attacks resolve with full calc lines and streamed prose; potion use decrements and tends named wounds; escape % displayed; defeat overlay reached ("You have fallen") with the 10-opponent picker; zero console errors.
+- UI review: pending-human-test
+- Blockers or coordination notes: Live LLM narration needs a human test with a real Anthropic key pasted into the in-combat settings bar (key stored in localStorage only; cost is pennies) — the mocked narrator tests cover prompt assembly and fallback-on-error. Builds on codex's src/player module (read-only). No merge to main without explicit human approval per workflow.
+
+## 2026-07-09 - claude-fable-5 - feature/claude-fable-5/combat-screen (start)
+
+- Status: started
+- Summary: Combat milestone — dedicated full-screen D&D 2024 combat: click-to-roll dice with full calculation display, initiative-ordered turns, injury/exhaustion tracking, escape with shown odds, in-combat potion use, biome/weather/time-of-day scene integration, LLM narration via Claude Haiku 4.5 (plain factual fallback without API key), battle test on character creation, no permadeath (replay + opponent picker). Plan approved by human.
+- Files changed: package.json (+@anthropic-ai/sdk)
+- Tests run: (none yet)
+- UI review: pending-human-test
+- Blockers or coordination notes: builds on codex's src/player module (read-only usage); combat code lives in new src/combat/ to minimize overlap.
+
 ## 2026-07-08 22:06 CDT - codex - feature/codex/starting-inventory-kit
 
 - Status: started
