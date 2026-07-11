@@ -14,7 +14,7 @@ import { findReputation } from '../../player/reputation';
 import { addMinutes, season, type GameDateTime } from '../../sim/calendar';
 import { weatherAt, isSevere } from '../../sim/weather';
 import { mulberry32 } from '../../sim/rng';
-import { lambdaFor, poissonHit } from './rate';
+import { lambdaFor, poissonHit, rateBreakdown } from './rate';
 import { hostileChance } from './disposition';
 import { pickActorKind, buildActor, type TableContext } from './tables';
 import { pityFactor, advancePacing, type PacingState } from './pacing';
@@ -210,6 +210,74 @@ export function rollTravelEncounters(input: EncounterInput): EncounterOutcome {
     pacing = advancePacing(pacing, hoursPerStep);
   }
   return { kind: 'clear' };
+}
+
+export interface DangerFactor {
+  label: string;
+  /** the biome base is a rate (per hour); the rest are dimensionless multipliers */
+  value: number;
+  isRate?: boolean;
+}
+
+export interface DangerBreakdown {
+  steps: number;
+  activeHours: number;
+  hoursPerStep: number;
+  meanLambda: number;
+  /** expected number of encounters over the leg, E[N] = Σ λ·Δt */
+  expectedEncounters: number;
+  chance: number;
+  dominant: string;
+  /** each factor averaged across the sampled waypoints */
+  factors: DangerFactor[];
+}
+
+/**
+ * Full danger calculation for the leg — the same expected-value math as
+ * legDangerRead, but with every averaged factor exposed so the player (and
+ * tests) can see exactly how the number was built.
+ */
+export function legDangerBreakdown(input: EncounterInput): DangerBreakdown {
+  const steps = stepCount(input.plan);
+  const waypoints = buildWaypoints(input, steps);
+  const hoursPerStep = input.plan.travelHours / steps;
+  const n = waypoints.length || 1;
+  const agg = { base: 0, road: 0, remoteness: 0, time: 0, marker: 0, war: 0, season: 0, weather: 0 };
+  let sumLambda = 0;
+  for (const wp of waypoints) {
+    const b = rateBreakdown(wp.rate);
+    agg.base += b.base;
+    agg.road += b.road;
+    agg.remoteness += b.remoteness;
+    agg.time += b.time;
+    agg.marker += b.marker;
+    agg.war += b.war;
+    agg.season += b.season;
+    agg.weather += b.weather;
+    sumLambda += b.lambda;
+  }
+  const meanLambda = sumLambda / n;
+  const expectedEncounters = sumLambda * hoursPerStep;
+  const factors: DangerFactor[] = [
+    { label: 'Biome base rate', value: agg.base / n, isRate: true },
+    { label: 'Road / terrain', value: agg.road / n },
+    { label: 'Remoteness', value: agg.remoteness / n },
+    { label: 'Time of day', value: agg.time / n },
+    { label: 'Nearby lair', value: agg.marker / n },
+    { label: 'War', value: agg.war / n },
+    { label: 'Season', value: agg.season / n },
+    { label: 'Weather', value: agg.weather / n },
+  ];
+  return {
+    steps,
+    activeHours: input.plan.travelHours,
+    hoursPerStep,
+    meanLambda,
+    expectedEncounters,
+    chance: 1 - Math.exp(-expectedEncounters),
+    dominant: legDangerRead(input).dominant,
+    factors,
+  };
 }
 
 /** Pre-departure danger read for the whole leg — expected value, no RNG. */

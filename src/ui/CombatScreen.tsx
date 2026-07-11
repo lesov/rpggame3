@@ -8,6 +8,7 @@ import {
 } from '../combat/engine';
 import type { Combatant, CombatState, PlayerActionId } from '../combat/types';
 import { MONSTERS } from '../combat/monsters';
+import { planTravel } from '../player/travel';
 import { ClaudeNarrator } from '../combat/narrator/claude';
 import { PlainNarrator } from '../combat/narrator/plain';
 import { narratableEvents, type NarrativeProvider } from '../combat/narrator/types';
@@ -220,13 +221,27 @@ function CombatantCard({ c, round, side }: { c: Combatant; round: number; side: 
   );
 }
 
+function formatRemaining(minutes: number): string {
+  const hours = Math.ceil(minutes / 60);
+  if (hours < 24) return `${hours} hr`;
+  const days = Math.floor(hours / 24);
+  const rem = hours % 24;
+  return rem ? `${days} d ${rem} hr` : `${days} d`;
+}
+
 function EndOverlay({ combat, outro }: { combat: CombatState; outro?: Beat }) {
-  const { state, dispatch } = useGame();
+  const { state, dispatch, wd } = useGame();
   const [picking, setPicking] = useState(false);
   const groups: Record<string, typeof MONSTERS> = { easy: [], fair: [], hard: [] };
   for (const m of MONSTERS) groups[m.difficulty].push(m);
   // A road ambush: continue the journey rather than replay / pick a foe.
-  const fromTravel = state.pendingEncounter !== null;
+  const pe = state.pendingEncounter;
+  const fromTravel = pe !== null;
+  // How much of the journey is still ahead, from where the fight left off.
+  const remaining =
+    pe && state.player
+      ? planTravel(wd, state.player, pe.resume.destination, pe.resume.mode, pe.resume.dayOnly, state.time)
+      : null;
 
   return (
     <div className="combat-overlay" data-testid="combat-overlay">
@@ -235,6 +250,12 @@ function EndOverlay({ combat, outro }: { combat: CombatState; outro?: Beat }) {
         {!picking && (
           <p className={`overlay-outro${outro?.streaming && !outro.prose ? ' shimmer' : ''}`} data-testid="overlay-outro">
             {outro?.prose || 'Drawing the aftermath…'}
+          </p>
+        )}
+        {fromTravel && remaining && !picking && (
+          <p className="overlay-journey" data-testid="overlay-journey">
+            <strong>{formatRemaining(remaining.elapsedMinutes)}</strong> and {Math.round(remaining.distanceMi)} mi still to reach{' '}
+            <strong>{pe!.resume.destination.name}</strong>.
           </p>
         )}
         {picking ? null : fromTravel ? (

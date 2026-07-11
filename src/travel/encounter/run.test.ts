@@ -7,7 +7,7 @@ import type { PlayerCharacter } from '../../player/types';
 import type { TravelPlan, TravelDestination } from '../../player/travel';
 import { START_DATE_TIME } from '../../sim/calendar';
 import { initialPacing } from './pacing';
-import { rollTravelEncounters, legDangerRead, stepCount, type EncounterInput } from './run';
+import { rollTravelEncounters, legDangerRead, legDangerBreakdown, stepCount, type EncounterInput } from './run';
 
 let wd: WorldData;
 
@@ -107,6 +107,27 @@ describe('legDangerRead', () => {
     const shortRead = legDangerRead(input({ plan: plan({ travelHours: 2, elapsedMinutes: 120 }) }));
     const longRead = legDangerRead(input({ plan: plan({ travelHours: 80, elapsedMinutes: 80 * 60 }) }));
     expect(longRead.chance).toBeGreaterThan(shortRead.chance);
+  });
+});
+
+describe('legDangerBreakdown', () => {
+  it('exposes the averaged factors and a self-consistent expected count', () => {
+    const b = legDangerBreakdown(input());
+    expect(b.factors).toHaveLength(8);
+    // the first factor is the biome base rate, the rest are multipliers
+    expect(b.factors[0].isRate).toBe(true);
+    expect(b.factors[0].value).toBeGreaterThan(0);
+    expect(b.meanLambda).toBeGreaterThan(0);
+    // chance is derived from expected encounters
+    expect(b.chance).toBeCloseTo(1 - Math.exp(-b.expectedEncounters), 6);
+    // E[N] equals mean λ times active hours
+    expect(b.expectedEncounters).toBeCloseTo(b.meanLambda * b.activeHours, 4);
+  });
+  it('agrees with legDangerRead on the overall chance', () => {
+    const b = legDangerBreakdown(input());
+    const r = legDangerRead(input());
+    expect(b.chance).toBeCloseTo(r.chance, 6);
+    expect(b.dominant).toBe(r.dominant);
   });
 });
 

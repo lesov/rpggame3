@@ -648,3 +648,37 @@ button.active { background: var(--accent-2); border-color: var(--accent-2); colo
 }
 .resume-banner strong { color: var(--accent); }
 .resume-actions { display: flex; gap: 8px; }
+
+.calc-link {
+  border: none;
+  background: none;
+  color: var(--accent-2);
+  padding: 0;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.calc-link:hover { color: var(--accent); border: none; }
+.danger-calc {
+  margin: 6px 0 2px;
+  padding: 8px 10px;
+  background: #10141b;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+}
+.danger-calc-summary { color: var(--text-dim); margin-bottom: 6px; line-height: 1.4; }
+.danger-calc-row { display: flex; justify-content: space-between; gap: 12px; padding: 1.5px 0; }
+.danger-calc-row span:first-child { color: var(--text-dim); }
+.danger-calc-row.total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 5px; }
+.danger-calc-row.total span:first-child { color: var(--text); }
+.danger-calc-row.total span:last-child { color: var(--accent); font-weight: 600; }
+
+.overlay-journey {
+  margin: -8px 0 18px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  text-align: center;
+}
+.overlay-journey strong { color: var(--accent-2); }
