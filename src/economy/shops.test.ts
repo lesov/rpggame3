@@ -72,6 +72,21 @@ describe('shops', () => {
     expect(a).toEqual(b);
   });
 
+  it('stocks food provisions at every vendor, including a healer', () => {
+    const burg = makeBurg(48000, [
+      { type: 'trader' },
+      { type: 'healer' },
+      { type: 'craftsman', grade: 'simple' },
+      { type: 'shop', grade: 'advanced' },
+    ]);
+    for (const shop of shopsForBurg(burg)) {
+      const provisions = shop.stock.find((s) => s.itemId === 'provisions');
+      expect(provisions, shop.vendorKind).toBeDefined();
+      expect(provisions!.qty).toBeGreaterThan(0);
+    }
+    expect(travellingTraderShop(42).stock.some((s) => s.itemId === 'provisions')).toBe(true);
+  });
+
   it('keeps the travelling trader at or below fine', () => {
     const shop = travellingTraderShop(999);
     expect(shop.qualityCeiling).toBe('fine');

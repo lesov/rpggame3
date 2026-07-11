@@ -8,7 +8,7 @@
  */
 import type { Burg, SettlementBuilding } from '../data/types';
 import { mulberry32, hash } from '../sim/rng';
-import { catalogUpTo, type CatalogItem, type ItemCategory, type ItemQuality } from './catalog';
+import { catalogUpTo, getCatalogItem, type CatalogItem, type ItemCategory, type ItemQuality } from './catalog';
 
 export type VendorKind = 'trader' | 'healer' | 'craftsman' | 'shop' | 'travelling';
 
@@ -104,6 +104,20 @@ export function buildStock(
   });
 }
 
+/** Items every vendor carries no matter their focus (food, water, the basics). */
+const STAPLE_ITEMS: { itemId: string; qty: number }[] = [{ itemId: 'provisions', qty: 30 }];
+
+/** Guarantee the staples are stocked, priced by the vendor's multiplier. */
+function withStaples(stock: StockEntry[], priceMult: number): StockEntry[] {
+  const present = new Set(stock.map((s) => s.itemId));
+  const staples = STAPLE_ITEMS.filter((s) => !present.has(s.itemId)).map((s) => ({
+    itemId: s.itemId,
+    price: Math.max(1, Math.round((getCatalogItem(s.itemId)?.basePrice ?? 1) * priceMult)),
+    qty: s.qty,
+  }));
+  return [...staples, ...stock];
+}
+
 function makeShop(id: string, kind: VendorKind, grade: string | undefined, ceiling: ItemQuality, seed: number): Shop {
   const profile = vendorProfile(kind, grade);
   const qualityCeiling = minQuality(profile.ownCeiling, ceiling);
@@ -115,7 +129,7 @@ function makeShop(id: string, kind: VendorKind, grade: string | undefined, ceili
     categories: profile.categories,
     priceMult: profile.priceMult,
     sellRate: SELL_RATE,
-    stock: buildStock(profile.categories, qualityCeiling, profile.priceMult, profile.count, seed),
+    stock: withStaples(buildStock(profile.categories, qualityCeiling, profile.priceMult, profile.count, seed), profile.priceMult),
   };
 }
 
