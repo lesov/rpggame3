@@ -4,6 +4,15 @@ Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
 ## 2026-07-10 - claude-fable-5 - feature/claude-fable-5/travel-encounters
 
+- Status: approved / merged
+- Summary: Human approver tested the travel-encounter system in the live UI (including the review follow-ups: context-aware post-combat overlay, the "show math" danger breakdown, and the remaining-journey readout on both the combat end screen and the peaceful encounter modal) and stated their check is finished, explicitly authorizing the merge into main ("merge and I will push manually afterwards"). Merged feature/claude-fable-5/travel-encounters into main with a --no-ff merge commit. Push deferred to the human per their instruction; no release tag requested.
+- Files changed: AGENT_CHANGELOG.md (this entry); merge of the travel-encounters branch (encounter model + store/UI integration, see prior entries).
+- Tests run: `npx vitest run` — 169 passed; `npx tsc --noEmit` — clean; `npm run build` — passed (as of the ready-for-review state). Headless smokes green.
+- UI review: approved-by-human (2026-07-10)
+- Blockers or coordination notes: main is merged locally but NOT pushed — the human will push manually. Do not push, re-tag, or amend main.
+
+## 2026-07-10 - claude-fable-5 - feature/claude-fable-5/travel-encounters
+
 - Status: ready-for-review
 - Summary: Travel encounters — a two-question Poisson hazard model on the existing travel system. Question 1 (λ, frequency) reads only actor-density inputs; Question 2 (P(hostile|encounter)) reads only disposition inputs; the split is enforced structurally by disjoint context types, so player reputation can never change λ and biome can never change hostility. λ = base(biome habitability) × road × remoteness(pop/burg) × time × marker × war (with a decaying post-war tail) × season × weather × visibility, clamped to 4× base; P = 1−e^(−λ·Δt) with a bounded pity-timer to smooth Poisson streaks. Actor tables (markers pin the type, bandits favour roads, night thins human traffic) map to combat statblocks. A leg is walked as ~hourly waypoints; the first hit interrupts travel — hostile actors open the combat screen, peaceful ones open a choice modal (continue / attack / make camp) — then travel resumes on the remainder (multiple encounters per trip fall out naturally). The TravelPanel shows a pre-departure danger read (chance + dominant driver).
 - Files changed: src/travel/encounter/{types,rate,disposition,tables,pacing,run}.ts + 5 test files; src/ui/store.tsx (pacing + pendingEncounter slice, encounter-aware travel/resume/attack/dismiss actions), src/ui/EncounterModal.tsx (new), src/ui/App.tsx (encounter screen + resume banner), src/ui/TravelPanel.tsx (danger read), src/ui/store.test.ts (encounter-aware travel + resume), src/ui/styles.css, AGENT_CHANGELOG.md.
