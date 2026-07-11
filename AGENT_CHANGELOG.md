@@ -4,6 +4,15 @@ Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
 ## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/shopping
 
+- Status: approved / merged
+- Summary: Human tested shopping in the live UI (settlement markets, buy/sell, item-quality gating by shop/city size, equip/AC, travelling-trader trade, and the follow-up that stocks food provisions at every vendor) and stated their check passed, explicitly authorizing the merge ("my check passed, merge it"). Merged feature/claude-fable-5/shopping into main with a --no-ff merge commit. Push deferred to the human per their instruction; no release tag requested.
+- Files changed: AGENT_CHANGELOG.md (this entry); merge of the shopping branch (see prior entry).
+- Tests run: `npx vitest run` — 202 passed; `npx tsc --noEmit` — clean; `npm run build` — passed (as of the ready-for-review state).
+- UI review: approved-by-human (2026-07-11)
+- Blockers or coordination notes: main is merged locally but NOT pushed — the human will push manually. Do not push, re-tag, or amend main.
+
+## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/shopping
+
 - Status: ready-for-review
 - Summary: Add shopping — buy and sell in settlements and from travelling traders on the road. Vendor type (trader / healer / craftsman / city shop) and settlement size gate the quality of the best items available, so the strongest healing potions, finest weapons, and best armor are only sold at the best shops in the biggest cities (city `shop` buildings reach masterwork; village traders are common-only). Item grades are mechanically real: greater/superior potions heal more (2d4+2 → 4d4+4 → 8d4+8), finer weapons hit harder (+1/+2 to-hit & damage), armor raises AC (new armor/AC model: worn AC = acBase + min(Dex, dexCap)), gear is tiered. Full-screen Shop overlay; simple seeded storefront (sell 40%, unlimited vendor coin, deterministic stock that restocks on revisit). Settlement entry via a "Visit market" button in the Inventory panel; road entry via a "Trade with them" button on merchant/traveller encounters (journey resumes after trading). Equip/unequip in the Inventory panel recomputes AC and the combat weapon.
 - Files changed: new src/economy/{catalog,money,shops,transaction}.ts (+ catalog/shops/transaction .test.ts), src/ui/ShopScreen.tsx; src/combat/kits.ts (equipped weapon + potion stack), src/combat/{types,engine}.ts (PotionCharge/potionStack, tiered potion heal + potionsRemainingById), src/combat/kits.test.ts (weapon-grade + potion-stack tests); src/ui/store.tsx (screen 'shop' + shop slice + openShop/openTravelShop/switchVendor/buyItem/sellItem/equipItem/unequipItem/closeShop + settlementVendorsAt + per-id potion write-back), src/ui/store.test.ts (shopping suite), src/ui/{App,InventoryPanel,EncounterModal}.tsx, src/ui/styles.css, AGENT_CHANGELOG.md.
