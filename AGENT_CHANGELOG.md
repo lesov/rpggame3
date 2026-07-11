@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/shopping
+
+- Status: ready-for-review
+- Summary: Add shopping — buy and sell in settlements and from travelling traders on the road. Vendor type (trader / healer / craftsman / city shop) and settlement size gate the quality of the best items available, so the strongest healing potions, finest weapons, and best armor are only sold at the best shops in the biggest cities (city `shop` buildings reach masterwork; village traders are common-only). Item grades are mechanically real: greater/superior potions heal more (2d4+2 → 4d4+4 → 8d4+8), finer weapons hit harder (+1/+2 to-hit & damage), armor raises AC (new armor/AC model: worn AC = acBase + min(Dex, dexCap)), gear is tiered. Full-screen Shop overlay; simple seeded storefront (sell 40%, unlimited vendor coin, deterministic stock that restocks on revisit). Settlement entry via a "Visit market" button in the Inventory panel; road entry via a "Trade with them" button on merchant/traveller encounters (journey resumes after trading). Equip/unequip in the Inventory panel recomputes AC and the combat weapon.
+- Files changed: new src/economy/{catalog,money,shops,transaction}.ts (+ catalog/shops/transaction .test.ts), src/ui/ShopScreen.tsx; src/combat/kits.ts (equipped weapon + potion stack), src/combat/{types,engine}.ts (PotionCharge/potionStack, tiered potion heal + potionsRemainingById), src/combat/kits.test.ts (weapon-grade + potion-stack tests); src/ui/store.tsx (screen 'shop' + shop slice + openShop/openTravelShop/switchVendor/buyItem/sellItem/equipItem/unequipItem/closeShop + settlementVendorsAt + per-id potion write-back), src/ui/store.test.ts (shopping suite), src/ui/{App,InventoryPanel,EncounterModal}.tsx, src/ui/styles.css, AGENT_CHANGELOG.md.
+- Tests run: `npx vitest run` — 201 passed (25 files; +27 new across catalog/shops/transaction/kits/store); `npx tsc --noEmit` — clean; `npm run build` — passed (pre-existing Anthropic-SDK node:fs externalization + chunk-size warnings only).
+- UI review: pending-human-test. Dev server hot-reloading this branch at http://localhost:5175/.
+- Blockers or coordination notes: Headless browser smoke could NOT run here — the Playwright Chromium binary is missing system libs (libnspr4/libnss3/libasound) and won't launch without a root package install, which I did not perform. Logic is covered instead by the store/economy integration tests, which drive the real reducer against real world data through openShop → buy → sell → equip → closeShop and openTravelShop (quality-ceiling gating asserted). Visual/interaction check is left to the human UI test. Branched from main 86af03b (includes codex's Codex panel); shared store/App/styles touch-points added additively (does not disturb the codex tab or selectedCodexId). No merge to main without explicit human approval.
+
 ## 2026-07-11 13:22 CDT - codex - feature/codex/codex-panel
 
 - Status: started

@@ -4,9 +4,40 @@
  * (Second Wind, Rage, Feint, Martial Arts, heals).
  */
 import type { PlayerCharacter, CharacterClassId, Ability } from '../player/types';
-import { STARTING_WEAPON_BY_CLASS, isWeaponProficientForClass } from '../player/rules2024';
+import { STARTING_WEAPON_BY_CLASS, getClassRule } from '../player/rules2024';
+import { getCatalogItem, qualityRank } from '../economy/catalog';
 import { weaponStats } from './weapons';
-import type { Combatant, CombatantAttack, CombatantResources } from './types';
+import type { Combatant, CombatantAttack, CombatantResources, PotionCharge } from './types';
+
+/** Which base weapons are martial (the rest are simple). */
+const MARTIAL_BASE = new Set(['battleaxe', 'longsword', 'rapier', 'shortsword']);
+
+function proficientWithBase(pc: PlayerCharacter, baseId: string): boolean {
+  const training = getClassRule(pc.classId).weaponTraining;
+  return MARTIAL_BASE.has(baseId)
+    ? training.some((t) => t.includes('Martial weapons'))
+    : training.some((t) => t.includes('Simple weapons'));
+}
+
+/** The weapon the player fights with: the equipped one, else the class default. */
+function equippedWeapon(pc: PlayerCharacter): { baseId: string; bonus: number } {
+  const equipped = pc.inventory.find((i) => i.category === 'weapon' && i.equipped);
+  const spec = equipped ? getCatalogItem(equipped.id)?.weapon : undefined;
+  if (spec) return spec;
+  return { baseId: STARTING_WEAPON_BY_CLASS[pc.classId].id, bonus: 0 };
+}
+
+/** Carried healing potions expanded to charges, strongest grade first. */
+function buildPotionStack(pc: PlayerCharacter): PotionCharge[] {
+  const charges: { charge: PotionCharge; rank: number }[] = [];
+  for (const item of pc.inventory) {
+    const cat = getCatalogItem(item.id);
+    if (!cat?.heal) continue;
+    for (let n = 0; n < item.quantity; n++) charges.push({ charge: { id: item.id, heal: cat.heal }, rank: qualityRank(cat.quality) });
+  }
+  charges.sort((a, b) => b.rank - a.rank);
+  return charges.map((c) => c.charge);
+}
 
 interface CasterKit {
   cantrip?: CombatantAttack; // toHit/dc filled in at build time
@@ -60,10 +91,6 @@ export const PLAYER_BODY_PARTS: [string, number][] = [
   ['thigh', 3], ['knee', 1], ['shin', 2], ['calf', 1],
 ];
 
-function potionCount(pc: PlayerCharacter): number {
-  return pc.inventory.find((i) => i.id === 'healing-potion')?.quantity ?? 0;
-}
-
 /** Best of Athletics(STR)/Acrobatics(DEX), proficiency counted when trained. */
 export function escapeBonusFor(pc: PlayerCharacter): number {
   const athletics = pc.abilityModifiers.str + (pc.skillProficiencies.includes('athletics') ? pc.proficiencyBonus : 0);
@@ -72,9 +99,9 @@ export function escapeBonusFor(pc: PlayerCharacter): number {
 }
 
 export function buildPlayerCombatant(pc: PlayerCharacter): Combatant {
-  const weaponInfo = STARTING_WEAPON_BY_CLASS[pc.classId];
-  const stats = weaponStats(weaponInfo.id);
-  const proficient = isWeaponProficientForClass(pc.classId, weaponInfo);
+  const weapon = equippedWeapon(pc);
+  const stats = weaponStats(weapon.baseId);
+  const proficient = proficientWithBase(pc, weapon.baseId);
   const abilityMod = stats.finesse
     ? Math.max(pc.abilityModifiers.str, pc.abilityModifiers.dex)
     : pc.abilityModifiers.str;
@@ -82,12 +109,12 @@ export function buildPlayerCombatant(pc: PlayerCharacter): Combatant {
   const attacks: CombatantAttack[] = [
     {
       id: stats.id,
-      name: stats.name,
+      name: weapon.bonus > 0 ? `${stats.name} +${weapon.bonus}` : stats.name,
       verb: stats.verb,
       kind: 'melee',
-      toHit: abilityMod + (proficient ? pc.proficiencyBonus : 0),
+      toHit: abilityMod + (proficient ? pc.proficiencyBonus : 0) + weapon.bonus,
       damageDice: stats.damageDice,
-      damageBonus: abilityMod,
+      damageBonus: abilityMod + weapon.bonus,
       damageType: stats.damageType,
     },
   ];
@@ -95,7 +122,8 @@ export function buildPlayerCombatant(pc: PlayerCharacter): Combatant {
   const kit = casterKit(pc.classId, pc);
   if (kit.cantrip) attacks.push(kit.cantrip);
 
-  const resources: CombatantResources = { potions: potionCount(pc) };
+  const potionStack = buildPotionStack(pc);
+  const resources: CombatantResources = { potions: potionStack.length, potionStack };
   if (pc.classId === 'fighter') resources.secondWind = 1;
   if (pc.classId === 'barbarian') resources.rage = 1;
   if (pc.classId === 'rogue') resources.feintAvailable = true;

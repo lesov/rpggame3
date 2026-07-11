@@ -11,6 +11,7 @@ import { CombatScreen } from './CombatScreen';
 import { TravelPanel } from './TravelPanel';
 import { EncounterModal, ResumeBanner } from './EncounterModal';
 import { CodexPanel } from './CodexPanel';
+import { ShopScreen } from './ShopScreen';
 
 function LayerToggles() {
   const { state, dispatch } = useGame();
@@ -109,6 +110,7 @@ function Shell() {
   const { state } = useGame();
   if (state.screen === 'combat') return <CombatScreen />;
   if (state.screen === 'encounter') return <EncounterModal />;
+  if (state.screen === 'shop') return <ShopScreen />;
   return (
     <div className="app">
       <header className="app-header">

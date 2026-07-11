@@ -21,7 +21,10 @@ import type { RenderOptions } from '../map/renderer';
 import type { PlayerCharacter } from '../player/types';
 import { travelDestinationLocation, planTravel, provisionsNeeded, type TravelPlan, type TravelMode, type TravelDestination } from '../player/travel';
 import type { CombatState } from '../combat/types';
-import { createCombat, initialPendingRoll, potionsRemaining } from '../combat/engine';
+import { createCombat, initialPendingRoll, potionsRemainingById } from '../combat/engine';
+import { getCatalogItem } from '../economy/catalog';
+import { shopsForBurg, travellingTraderShop, type Shop } from '../economy/shops';
+import { buyItem as buyFromShop, sellItem as sellToShop, equipItem as equipInventory, unequipItem as unequipInventory } from '../economy/transaction';
 import { getMonster, defaultOpponentFor } from '../combat/monsters';
 import { buildScene } from '../combat/scene';
 import { hash } from '../sim/rng';
@@ -58,11 +61,20 @@ export interface GameState {
   jump: JumpCommand | null;
   focus: { x: number; y: number } | null;
   player: PlayerCharacter | null;
-  screen: 'map' | 'combat' | 'encounter';
+  screen: 'map' | 'combat' | 'encounter' | 'shop';
   combat: CombatState | null;
   pacing: PacingState;
   pendingEncounter: PendingEncounter | null;
   selectedCodexId: string | null;
+  shop: ShopSession | null;
+}
+
+/** An open shopping visit: the vendors present and which one is showing. */
+export interface ShopSession {
+  vendors: Shop[];
+  index: number;
+  /** Where the player returns to when they leave the shop. */
+  returnScreen: 'map';
 }
 
 /** A travel leg the player can pick up again after an encounter resolves. */
@@ -93,7 +105,15 @@ export type GameAction =
   | { type: 'dismissEncounter' }
   | { type: 'startCombat'; monsterId?: string; seed?: number }
   | { type: 'setCombat'; combat: CombatState }
-  | { type: 'endCombat' };
+  | { type: 'endCombat' }
+  | { type: 'openShop'; vendors: Shop[] }
+  | { type: 'openTravelShop' }
+  | { type: 'switchVendor'; index: number }
+  | { type: 'buyItem'; entryIndex: number; qty?: number }
+  | { type: 'sellItem'; itemId: string; qty?: number }
+  | { type: 'equipItem'; itemId: string }
+  | { type: 'unequipItem'; itemId: string }
+  | { type: 'closeShop' };
 
 const FEED_CAP = 400;
 
@@ -109,6 +129,13 @@ export function eventLocation(wd: WorldData, e: WorldEvent): { x: number; y: num
   }
   if (e.location.x !== undefined && e.location.y !== undefined) return { x: e.location.x, y: e.location.y };
   return null;
+}
+
+/** The vendors a player can visit while standing in a settlement (else []). */
+export function settlementVendorsAt(wd: WorldData, player: PlayerCharacter | null): Shop[] {
+  if (!player) return [];
+  const burg = wd.world.burgs.find((b) => b.cell === player.location.cellId);
+  return burg ? shopsForBurg(burg) : [];
 }
 
 export function initialState(wd: WorldData): GameState {
@@ -154,6 +181,7 @@ export function initialState(wd: WorldData): GameState {
     pacing: initialPacing,
     pendingEncounter: null,
     selectedCodexId: null,
+    shop: null,
   };
 }
 
@@ -355,19 +383,61 @@ export function makeReducer(wd: WorldData) {
       case 'setCombat':
         return { ...state, combat: action.combat };
       case 'endCombat': {
-        // Persist potions drunk during the fight back to the player's inventory.
+        // Persist potions drunk during the fight back to the player's inventory,
+        // reconciling each healing-potion grade by its own id.
         let player = state.player;
         if (player && state.combat) {
-          const left = potionsRemaining(state.combat);
+          const left = potionsRemainingById(state.combat);
           player = {
             ...player,
-            inventory: player.inventory.map((item) =>
-              item.id === 'healing-potion' ? { ...item, quantity: left } : item,
-            ),
+            inventory: player.inventory
+              .map((item) => (getCatalogItem(item.id)?.heal ? { ...item, quantity: left[item.id] ?? 0 } : item))
+              .filter((item) => item.quantity > 0),
           };
         }
         return { ...state, screen: 'map', combat: null, player };
       }
+      case 'openShop': {
+        if (!state.player || action.vendors.length === 0) return state;
+        return { ...state, screen: 'shop', shop: { vendors: action.vendors, index: 0, returnScreen: 'map' } };
+      }
+      case 'openTravelShop': {
+        if (!state.player) return state;
+        const seed = hash(state.ord, minuteOfDayOf(state.time), state.player.location.cellId, 0x5401);
+        const shop = travellingTraderShop(seed);
+        // Keep pendingEncounter so the journey can be resumed after trading.
+        return { ...state, screen: 'shop', shop: { vendors: [shop], index: 0, returnScreen: 'map' } };
+      }
+      case 'switchVendor': {
+        if (!state.shop) return state;
+        const index = Math.max(0, Math.min(action.index, state.shop.vendors.length - 1));
+        return { ...state, shop: { ...state.shop, index } };
+      }
+      case 'buyItem': {
+        if (!state.player || !state.shop) return state;
+        const vendor = state.shop.vendors[state.shop.index];
+        const result = buyFromShop(state.player, vendor, action.entryIndex, action.qty ?? 1);
+        if (result.error) return state;
+        const vendors = state.shop.vendors.map((v, i) => (i === state.shop!.index ? result.shop : v));
+        return { ...state, player: result.player, shop: { ...state.shop, vendors } };
+      }
+      case 'sellItem': {
+        if (!state.player || !state.shop) return state;
+        const vendor = state.shop.vendors[state.shop.index];
+        const result = sellToShop(state.player, vendor, action.itemId, action.qty ?? 1);
+        if (result.error) return state;
+        return { ...state, player: result.player };
+      }
+      case 'equipItem': {
+        if (!state.player) return state;
+        return { ...state, player: equipInventory(state.player, action.itemId) };
+      }
+      case 'unequipItem': {
+        if (!state.player) return state;
+        return { ...state, player: unequipInventory(state.player, action.itemId) };
+      }
+      case 'closeShop':
+        return { ...state, screen: 'map', shop: null };
       default:
         return state;
     }

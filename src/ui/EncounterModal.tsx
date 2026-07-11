@@ -55,6 +55,11 @@ export function EncounterModal() {
           </p>
         )}
         <div className="encounter-actions">
+          {(actor.kind === 'merchant' || actor.kind === 'traveler') && (
+            <button className="primary-action" onClick={() => dispatch({ type: 'openTravelShop' })}>
+              Trade with them
+            </button>
+          )}
           <button className="primary-action" onClick={() => dispatch({ type: 'resumeTravel' })}>
             Continue on your way
           </button>
