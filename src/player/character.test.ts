@@ -50,6 +50,27 @@ function makeWorld(tempC = 10): WorldData {
       buildings: [],
       landmarks: {},
     },
+    {
+      i: 2,
+      name: 'Marketvale',
+      cell: 2,
+      x: 14,
+      y: 12,
+      state: 1,
+      culture: 1,
+      type: 'Town',
+      group: 'town',
+      capital: false,
+      port: false,
+      citadel: false,
+      walls: false,
+      temple: false,
+      plaza: true,
+      shanty: false,
+      population: 4000,
+      buildings: [],
+      landmarks: {},
+    },
   ];
   return {
     geometry: {
@@ -111,10 +132,10 @@ function makeWorld(tempC = 10): WorldData {
 function validInput(): CharacterBuildInput {
   return {
     name: 'Test Hero',
+    gender: 'male',
     classId: 'fighter',
     speciesId: 'human',
     backgroundId: 'soldier',
-    backstoryId: 'battlefield_witness',
     nationalityId: 1,
     religionId: 1,
     abilityScores: suggestAbilityScores('fighter', 'soldier'),
@@ -205,11 +226,26 @@ describe('player character creation', () => {
     expect(errors.join(' ')).toContain('requires 2 class skill choices');
   });
 
-  it('chooses a land cell in the selected nation', () => {
-    const loc = chooseStartingLocation(makeWorld(), 1, 1, 'shipwrecked_pilgrim', 'Coast Test');
-    const cell = makeWorld().geometry.cells[loc.cellId];
-    expect(cell.h).toBeGreaterThanOrEqual(20);
-    expect(cell.state).toBe(1);
+  it('starts the player in a non-capital city of the selected nation', () => {
+    const wd = makeWorld();
+    const loc = chooseStartingLocation(wd, 1, 1, 'Test Hero');
+    const burg = wd.world.burgs.find((b) => b.cell === loc.cellId);
+    expect(burg).toBeDefined();
+    expect(burg!.capital).toBe(false);
+    expect(burg!.state).toBe(1);
+    expect(loc.placeName).toBe(burg!.name);
+    expect(loc.stateId).toBe(1);
+  });
+
+  it('references the assigned city and correct pronouns in the biography', () => {
+    const wd = makeWorld();
+    const he = buildPlayerCharacter({ ...validInput(), gender: 'male' }, wd, START_DATE);
+    const she = buildPlayerCharacter({ ...validInput(), gender: 'female' }, wd, START_DATE);
+    expect(he.story).toContain(he.name);
+    expect(he.story).toContain(he.location.placeName);
+    expect(he.story).toMatch(/\bhe\b/);
+    expect(she.story).toMatch(/\bshe\b/);
+    expect(he.story).not.toMatch(/\bthey\b/);
   });
 
   it('keeps pregenerated characters buildable', () => {

@@ -10,6 +10,7 @@ export function makeTestCharacter(classId: CharacterClassId = 'fighter'): Player
   return {
     id: `pc-test-${classId}`,
     name: 'Testovar',
+    gender: 'male',
     level: 1,
     xp: 0,
     classId,
@@ -18,8 +19,8 @@ export function makeTestCharacter(classId: CharacterClassId = 'fighter'): Player
     speciesName: 'Human',
     backgroundId: 'soldier',
     backgroundName: 'Soldier',
-    backstoryId: 'battlefield_witness',
-    backstoryTitle: 'Battlefield Witness',
+    backstoryId: 'duhi_washout',
+    backstoryTitle: 'Duhi Troupe Washout',
     nationalityId: 1,
     nationalityName: 'Shaterian Theocracy',
     religionId: 2,

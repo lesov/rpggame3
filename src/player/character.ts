@@ -1,6 +1,6 @@
 import type { WorldData } from '../data/worldLoader';
 import { START_DATE, type GameDate } from '../sim/calendar';
-import { getBackstory } from './backgrounds';
+import { getBackstory, fillBiography } from './backgrounds';
 import {
   abilityModifiers,
   getBackgroundRule,
@@ -75,7 +75,7 @@ export function buildPlayerCharacter(
   const cls = getClassRule(input.classId);
   const species = getSpeciesRule(input.speciesId);
   const background = getBackgroundRule(input.backgroundId);
-  const backstory = getBackstory(input.backstoryId);
+  const backstory = getBackstory();
   const state = wd.stateById.get(input.nationalityId);
   const religion = wd.religionById.get(input.religionId);
   if (!state) throw new Error(`Unknown nationality: ${input.nationalityId}`);
@@ -85,14 +85,19 @@ export function buildPlayerCharacter(
   const mods = abilityModifiers(input.abilityScores);
   const classSkillChoices = uniqueSkills(input.skillProficiencies ?? cls.skillChoices).slice(0, cls.skillCount);
   const skillProficiencies = uniqueSkills([...background.skillProficiencies, ...classSkillChoices]);
-  const location = chooseStartingLocation(wd, state.i, religion.i, backstory.id, input.name);
+  const location = chooseStartingLocation(wd, state.i, religion.i, input.name);
   const startClimate = wd.climateOf(location.cellId);
   const trainingLine = classTrainingLine(cls.id);
   const conMod = mods.con;
+  const story = fillBiography(
+    { name: input.name.trim(), className: cls.name, city: location.placeName, gender: input.gender },
+    backstory.biographyTemplate,
+  );
 
   return {
     id: `pc-${slug(input.name)}-${state.i}-${input.classId}`,
     name: input.name.trim(),
+    gender: input.gender,
     level: 1,
     xp: 0,
     classId: cls.id,
@@ -120,7 +125,7 @@ export function buildPlayerCharacter(
     languages: buildPlayerLanguages(input, wd),
     originFeat: background.feat,
     levelOneFeatures: cls.levelOneFeatures,
-    story: `${backstory.premise} ${trainingLine}`,
+    story,
     powerExplanation: trainingLine,
     minorBonus: backstory.minorBonus,
     inventory: startingInventoryForCharacter(cls.id, startClimate.temp),
