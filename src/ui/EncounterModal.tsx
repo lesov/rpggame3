@@ -1,5 +1,14 @@
 import { useGame } from './store';
+import { planTravel } from '../player/travel';
 import type { ActorKind } from '../travel/encounter/types';
+
+function formatRemaining(minutes: number): string {
+  const hours = Math.ceil(minutes / 60);
+  if (hours < 24) return `${hours} hr`;
+  const days = Math.floor(hours / 24);
+  const rem = hours % 24;
+  return rem ? `${days} d ${rem} hr` : `${days} d`;
+}
 
 const KIND_TITLE: Record<ActorKind, string> = {
   beast: 'A beast on the road',
@@ -25,10 +34,13 @@ const KIND_HOOK: Partial<Record<ActorKind, string>> = {
 };
 
 export function EncounterModal() {
-  const { state, dispatch } = useGame();
+  const { state, dispatch, wd } = useGame();
   const pe = state.pendingEncounter;
   if (!pe) return null;
   const actor = pe.encounter.actor;
+  const remaining = state.player
+    ? planTravel(wd, state.player, pe.resume.destination, pe.resume.mode, pe.resume.dayOnly, state.time)
+    : null;
 
   return (
     <div className="encounter-screen" data-testid="encounter-modal">
@@ -36,6 +48,12 @@ export function EncounterModal() {
         <h2>{KIND_TITLE[actor.kind]}</h2>
         <p className="encounter-desc">{actor.descriptor}.</p>
         {KIND_HOOK[actor.kind] && <p className="encounter-hook">{KIND_HOOK[actor.kind]}</p>}
+        {remaining && (
+          <p className="encounter-journey" data-testid="encounter-journey">
+            <strong>{formatRemaining(remaining.elapsedMinutes)}</strong> and {Math.round(remaining.distanceMi)} mi still to reach{' '}
+            <strong>{pe.resume.destination.name}</strong>.
+          </p>
+        )}
         <div className="encounter-actions">
           <button className="primary-action" onClick={() => dispatch({ type: 'resumeTravel' })}>
             Continue on your way
