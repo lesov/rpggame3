@@ -15,6 +15,7 @@ import {
 } from '../player/rules2024';
 import { findReputation } from '../player/reputation';
 import { ABILITIES, type Ability, type CharacterBuildInput, type CharacterClassId, type Gender, type OriginBackgroundId, type PlayerCharacter, type Skill, type SpeciesId } from '../player/types';
+import { tokenizeCodexLinks } from '../lore/codex';
 import { useGame } from './store';
 
 function optionName(id: string, options: { id: string; name: string }[]): string {
@@ -28,6 +29,27 @@ function formatModifier(value: number): string {
 function defaultSkills(classId: CharacterClassId): Skill[] {
   const cls = getClassRule(classId);
   return cls.skillChoices.slice(0, cls.skillCount);
+}
+
+function LinkedStoryText({ text }: { text: string }) {
+  const { dispatch } = useGame();
+  return (
+    <>
+      {tokenizeCodexLinks(text).map((token, index) => (
+        token.kind === 'link' && token.entryId
+          ? (
+              <button
+                key={`${token.text}-${index}`}
+                className="codex-inline-link"
+                onClick={() => dispatch({ type: 'openCodex', entryId: token.entryId! })}
+              >
+                {token.text}
+              </button>
+            )
+          : <span key={`${token.text}-${index}`}>{token.text}</span>
+      ))}
+    </>
+  );
 }
 
 function CharacterSheet({ player }: { player: PlayerCharacter }) {
@@ -80,7 +102,7 @@ function CharacterSheet({ player }: { player: PlayerCharacter }) {
       <div className="section">
         <h3>Biography</h3>
         {player.story.split(/\n\n+/).map((para, i) => (
-          <p className="story-text" key={i}>{para}</p>
+          <p className="story-text" key={i}><LinkedStoryText text={para} /></p>
         ))}
         <div className="kv"><span>Bonus</span><span>{player.minorBonus.name}: {player.minorBonus.description}</span></div>
       </div>
