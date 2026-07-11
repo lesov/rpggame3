@@ -9,6 +9,7 @@ import { CharacterBuilder } from './CharacterBuilder';
 import { InventoryPanel } from './InventoryPanel';
 import { CombatScreen } from './CombatScreen';
 import { TravelPanel } from './TravelPanel';
+import { EncounterModal, ResumeBanner } from './EncounterModal';
 
 function LayerToggles() {
   const { state, dispatch } = useGame();
@@ -99,6 +100,7 @@ function SidePanel() {
 function Shell() {
   const { state } = useGame();
   if (state.screen === 'combat') return <CombatScreen />;
+  if (state.screen === 'encounter') return <EncounterModal />;
   return (
     <div className="app">
       <header className="app-header">
@@ -110,6 +112,7 @@ function Shell() {
         <MapView />
         <SidePanel />
       </main>
+      <ResumeBanner />
     </div>
   );
 }
