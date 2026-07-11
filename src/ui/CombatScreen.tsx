@@ -221,10 +221,12 @@ function CombatantCard({ c, round, side }: { c: Combatant; round: number; side: 
 }
 
 function EndOverlay({ combat, outro }: { combat: CombatState; outro?: Beat }) {
-  const { dispatch } = useGame();
+  const { state, dispatch } = useGame();
   const [picking, setPicking] = useState(false);
   const groups: Record<string, typeof MONSTERS> = { easy: [], fair: [], hard: [] };
   for (const m of MONSTERS) groups[m.difficulty].push(m);
+  // A road ambush: continue the journey rather than replay / pick a foe.
+  const fromTravel = state.pendingEncounter !== null;
 
   return (
     <div className="combat-overlay" data-testid="combat-overlay">
@@ -235,7 +237,28 @@ function EndOverlay({ combat, outro }: { combat: CombatState; outro?: Beat }) {
             {outro?.prose || 'Drawing the aftermath…'}
           </p>
         )}
-        {!picking ? (
+        {picking ? null : fromTravel ? (
+          <div className="overlay-actions">
+            <button
+              className="primary-action"
+              onClick={() => {
+                dispatch({ type: 'endCombat' });
+                dispatch({ type: 'resumeTravel' });
+              }}
+            >
+              Continue your journey
+            </button>
+            <button
+              className="secondary-action"
+              onClick={() => {
+                dispatch({ type: 'endCombat' });
+                dispatch({ type: 'dismissEncounter' });
+              }}
+            >
+              Break off and make camp
+            </button>
+          </div>
+        ) : (
           <div className="overlay-actions">
             <button
               className="primary-action"
@@ -250,7 +273,8 @@ function EndOverlay({ combat, outro }: { combat: CombatState; outro?: Beat }) {
               Return to the map
             </button>
           </div>
-        ) : (
+        )}
+        {picking && (
           <div className="opponent-picker">
             {(['easy', 'fair', 'hard'] as const).map((diff) => (
               <div className="opponent-group" key={diff}>
