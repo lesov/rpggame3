@@ -19,11 +19,15 @@ import { ambientEventsBetween } from '../sim/ambient';
 import type { WorldData } from '../data/worldLoader';
 import type { RenderOptions } from '../map/renderer';
 import type { PlayerCharacter } from '../player/types';
-import { travelDestinationLocation, type TravelPlan } from '../player/travel';
+import { travelDestinationLocation, planTravel, provisionsNeeded, type TravelPlan, type TravelMode, type TravelDestination } from '../player/travel';
 import type { CombatState } from '../combat/types';
 import { createCombat, initialPendingRoll, potionsRemaining } from '../combat/engine';
 import { getMonster, defaultOpponentFor } from '../combat/monsters';
 import { buildScene } from '../combat/scene';
+import { hash } from '../sim/rng';
+import { rollTravelEncounters } from '../travel/encounter/run';
+import { initialPacing, advancePacing, resetPacing, type PacingState } from '../travel/encounter/pacing';
+import type { TravelEncounter } from '../travel/encounter/types';
 
 export type Speed = 'hour' | 'day' | 'week';
 export const SPEED_MINUTES: Record<Speed, number> = { hour: 60, day: MINUTES_PER_DAY, week: 7 * MINUTES_PER_DAY };
@@ -54,8 +58,22 @@ export interface GameState {
   jump: JumpCommand | null;
   focus: { x: number; y: number } | null;
   player: PlayerCharacter | null;
-  screen: 'map' | 'combat';
+  screen: 'map' | 'combat' | 'encounter';
   combat: CombatState | null;
+  pacing: PacingState;
+  pendingEncounter: PendingEncounter | null;
+}
+
+/** A travel leg the player can pick up again after an encounter resolves. */
+export interface EncounterResume {
+  destination: TravelDestination;
+  mode: TravelMode;
+  dayOnly: boolean;
+}
+
+export interface PendingEncounter {
+  encounter: TravelEncounter;
+  resume: EncounterResume;
 }
 
 export type GameAction =
@@ -68,6 +86,9 @@ export type GameAction =
   | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number }
   | { type: 'setPlayer'; player: PlayerCharacter }
   | { type: 'travel'; plan: TravelPlan }
+  | { type: 'resumeTravel' }
+  | { type: 'attackEncounter' }
+  | { type: 'dismissEncounter' }
   | { type: 'startCombat'; monsterId?: string; seed?: number }
   | { type: 'setCombat'; combat: CombatState }
   | { type: 'endCombat' };
@@ -128,6 +149,8 @@ export function initialState(wd: WorldData): GameState {
     player: null,
     screen: 'map',
     combat: null,
+    pacing: initialPacing,
+    pendingEncounter: null,
   };
 }
 
@@ -167,6 +190,84 @@ function consumeProvisions(player: PlayerCharacter, amount: number): PlayerChara
       item.id === 'provisions' ? { ...item, quantity: Math.max(0, item.quantity - amount) } : item,
     ),
   };
+}
+
+/**
+ * Run one travel leg through the encounter model. Either arrives at the
+ * destination (clear) or is interrupted en route: the player stops at the
+ * interception point and the leg is stored so it can be resumed after the
+ * encounter is dealt with. Hostile actors open combat; peaceful ones open the
+ * encounter modal.
+ */
+function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameState {
+  const player = state.player;
+  if (!player) return state;
+  const worldSeed = Number(wd.geometry.seed) || 0;
+  const seed = hash(worldSeed, state.ord, minuteOfDayOf(state.time), player.location.cellId, plan.destination.cellId);
+  const outcome = rollTravelEncounters({
+    wd,
+    player,
+    plan,
+    start: { date: state.date, time: state.time },
+    pacing: state.pacing,
+    seed,
+  });
+
+  if (outcome.kind === 'clear') {
+    const advanced = advanceClock(wd, state, plan.elapsedMinutes);
+    const location = travelDestinationLocation(wd, plan.destination, plan.summary);
+    const movedPlayer = consumeProvisions({ ...player, location }, plan.provisionsNeeded);
+    return {
+      ...advanced,
+      player: movedPlayer,
+      pacing: advancePacing(state.pacing, plan.travelHours),
+      pendingEncounter: null,
+      screen: 'map',
+      jump: { seq: (state.jump?.seq ?? 0) + 1, x: location.x, y: location.y, minZoom: 5 },
+      focus: { x: location.x, y: location.y },
+      selection: { cellId: location.cellId, x: location.x, y: location.y },
+      panelTab: 'travel',
+    };
+  }
+
+  // Interrupted en route.
+  const e = outcome.encounter;
+  const advanced = advanceClock(wd, state, e.elapsedMinutes);
+  const cell = wd.geometry.cells[e.cellId];
+  const stateRec = cell && cell.state > 0 ? wd.stateById.get(cell.state) : undefined;
+  const location = {
+    cellId: e.cellId,
+    x: e.x,
+    y: e.y,
+    stateId: stateRec?.i ?? 0,
+    stateName: stateRec?.fullName ?? stateRec?.name ?? 'the open country',
+    placeName: `the road to ${plan.destination.name}`,
+    reason: 'a traveller stopped short by what waits on the road',
+  };
+  const movedPlayer = consumeProvisions({ ...player, location }, provisionsNeeded(e.elapsedMinutes));
+  const pendingEncounter: PendingEncounter = {
+    encounter: e,
+    resume: { destination: plan.destination, mode: plan.mode, dayOnly: plan.dayOnly },
+  };
+  const base: GameState = {
+    ...advanced,
+    player: movedPlayer,
+    pacing: resetPacing(),
+    pendingEncounter,
+    jump: { seq: (state.jump?.seq ?? 0) + 1, x: e.x, y: e.y, minZoom: 6 },
+    focus: { x: e.x, y: e.y },
+    selection: { cellId: e.cellId, x: e.x, y: e.y },
+    panelTab: 'travel',
+  };
+  if (e.actor.hostile) {
+    const combat = beginCombat(wd, movedPlayer, base.date, base.time, e.actor.statblockId, hash(seed, 0x5151));
+    return { ...base, screen: 'combat', combat };
+  }
+  return { ...base, screen: 'encounter' };
+}
+
+function minuteOfDayOf(time: GameTime): number {
+  return time.hour * 60 + time.minute;
 }
 
 export function makeReducer(wd: WorldData) {
@@ -223,28 +324,23 @@ export function makeReducer(wd: WorldData) {
       }
       case 'travel': {
         if (!state.player) return state;
-        const advanced = advanceClock(wd, state, action.plan.elapsedMinutes);
-        const destination = action.plan.destination;
-        const location = travelDestinationLocation(wd, destination, action.plan.summary);
-        const player = consumeProvisions(
-          { ...state.player, location },
-          action.plan.provisionsNeeded,
-        );
-        const jump: JumpCommand = {
-          seq: (state.jump?.seq ?? 0) + 1,
-          x: location.x,
-          y: location.y,
-          minZoom: 5,
-        };
-        return {
-          ...advanced,
-          player,
-          jump,
-          focus: { x: location.x, y: location.y },
-          selection: { cellId: location.cellId, x: location.x, y: location.y },
-          panelTab: 'travel',
-        };
+        return runTravelLeg(wd, state, action.plan);
       }
+      case 'resumeTravel': {
+        const pe = state.pendingEncounter;
+        if (!state.player || !pe) return { ...state, pendingEncounter: null, screen: 'map' };
+        const replan = planTravel(wd, state.player, pe.resume.destination, pe.resume.mode, pe.resume.dayOnly, state.time);
+        return runTravelLeg(wd, { ...state, pendingEncounter: null }, replan);
+      }
+      case 'attackEncounter': {
+        const pe = state.pendingEncounter;
+        if (!state.player || !pe) return state;
+        const seed = hash(state.ord, pe.encounter.cellId, minuteOfDayOf(state.time), 0x0a11ac);
+        const combat = beginCombat(wd, state.player, state.date, state.time, pe.encounter.actor.statblockId, seed);
+        return { ...state, screen: 'combat', combat };
+      }
+      case 'dismissEncounter':
+        return { ...state, pendingEncounter: null, screen: 'map' };
       case 'startCombat': {
         if (!state.player) return state;
         const seed = action.seed ?? ((Math.random() * 0x7fffffff) | 0);

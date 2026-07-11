@@ -78,8 +78,9 @@ export interface DispositionContext {
 export interface EncounterActor {
   kind: ActorKind;
   hostile: boolean;
-  /** monster roster id when hostile, else undefined */
-  monsterId?: string;
+  /** the roster statblock this actor fights as — always present, so the player
+   *  can choose to attack even a peaceful actor */
+  statblockId: string;
   /** short descriptor for the log/modal */
   descriptor: string;
 }

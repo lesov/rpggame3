@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatDate, formatTime24 } from '../sim/calendar';
 import { nearbyTravelDestinations, planTravel, roadRouteFor, type TravelMode } from '../player/travel';
+import { legDangerRead } from '../travel/encounter/run';
 import { useGame } from './store';
+
+function dangerLabel(chance: number): { text: string; cls: string } {
+  if (chance < 0.15) return { text: 'Quiet', cls: 'safe' };
+  if (chance < 0.4) return { text: 'Uneasy', cls: 'uneasy' };
+  if (chance < 0.7) return { text: 'Dangerous', cls: 'dangerous' };
+  return { text: 'Deadly', cls: 'deadly' };
+}
 
 function formatDuration(minutes: number): string {
   const hours = Math.ceil(minutes / 60);
@@ -64,6 +72,11 @@ export function TravelPanel() {
           : 'offroad';
     return planTravel(wd, player, selected, selectedMode, dayOnly, state.time);
   }, [wd, player, selected, mode, roadAvailable, dayOnly, state.time]);
+
+  const danger = useMemo(() => {
+    if (!player || !plan) return null;
+    return legDangerRead({ wd, player, plan, start: { date: state.date, time: state.time }, pacing: state.pacing, seed: 0 });
+  }, [wd, player, plan, state.date, state.time, state.pacing]);
 
   if (!player) return <div className="inspector-empty">Create or choose a character before traveling.</div>;
 
@@ -133,6 +146,16 @@ export function TravelPanel() {
             <div className="kv"><span>Distance</span><span>{distanceSummary(plan)}</span></div>
             <div className="kv"><span>Travel time</span><span>{formatDuration(plan.elapsedMinutes)} elapsed · {plan.travelHours.toFixed(1)} {plan.activeTravelLabel}</span></div>
             <div className="kv"><span>Pace</span><span>{plan.paceDetail}</span></div>
+            {danger && (
+              <div className="kv" data-testid="danger-read">
+                <span>Road danger</span>
+                <span>
+                  <span className={`danger-badge ${dangerLabel(danger.chance).cls}`}>{dangerLabel(danger.chance).text}</span>
+                  {' '}
+                  {Math.round(danger.chance * 100)}% chance — {danger.dominant}
+                </span>
+              </div>
+            )}
             <div className={plan.insufficientProvisions ? 'kv warn' : 'kv'}>
               <span>Food</span>
               <span>{plan.provisionsNeeded} days required; {plan.provisionsAvailable} carried</span>

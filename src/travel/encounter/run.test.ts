@@ -80,8 +80,7 @@ describe('rollTravelEncounters', () => {
     expect(e.elapsedMinutes).toBeGreaterThan(0);
     expect(e.elapsedMinutes).toBeLessThanOrEqual(longLeg.elapsedMinutes);
     expect(e.actor.descriptor.length).toBeGreaterThan(0);
-    // hostile actors carry a statblock, peaceful ones do not
-    expect(e.actor.hostile ? e.actor.monsterId : e.actor.monsterId === undefined).toBeTruthy();
+    expect(e.actor.statblockId.length).toBeGreaterThan(0);
   });
 
   it('a rising pity timer makes an encounter no less likely than a fresh one', () => {

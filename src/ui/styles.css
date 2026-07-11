@@ -592,3 +592,59 @@ button.active { background: var(--accent-2); border-color: var(--accent-2); colo
 .opponent-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .opponent-card { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 12px; }
 .opponent-card span { font-size: 11px; color: var(--text-dim); }
+
+/* ---------- travel encounters ---------- */
+.danger-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.danger-badge.safe { background: #24402a; color: #8fd39b; }
+.danger-badge.uneasy { background: #3d3a22; color: #d9cd82; }
+.danger-badge.dangerous { background: #47331f; color: var(--accent); }
+.danger-badge.deadly { background: #47211f; color: #e58a7c; }
+
+.encounter-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(120% 90% at 50% 0%, #1a1f28 0%, var(--bg) 70%);
+  padding: 24px;
+}
+.encounter-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  max-width: 560px;
+  width: 100%;
+}
+.encounter-card h2 { margin: 0 0 14px; color: var(--accent); font-size: 22px; }
+.encounter-desc { margin: 0 0 12px; line-height: 1.6; font-size: 15px; color: #e6ddcb; }
+.encounter-hook { margin: 0 0 22px; line-height: 1.6; font-size: 13.5px; color: var(--text-dim); }
+.encounter-actions { display: flex; flex-direction: column; gap: 10px; }
+
+.resume-banner {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+}
+.resume-banner strong { color: var(--accent); }
+.resume-actions { display: flex; gap: 8px; }

@@ -129,7 +129,7 @@ const PEACEFUL_DESCRIPTOR: Partial<Record<ActorKind, string>> = {
 };
 
 export function buildActor(kind: ActorKind, biomeId: number, hostile: boolean, roll: number): EncounterActor {
-  const monsterId = monsterForKind(kind, biomeId, roll);
-  const descriptor = hostile ? getMonster(monsterId).descriptor : PEACEFUL_DESCRIPTOR[kind] ?? getMonster(monsterId).descriptor;
-  return { kind, hostile, monsterId: hostile ? monsterId : undefined, descriptor };
+  const statblockId = monsterForKind(kind, biomeId, roll);
+  const descriptor = hostile ? getMonster(statblockId).descriptor : PEACEFUL_DESCRIPTOR[kind] ?? getMonster(statblockId).descriptor;
+  return { kind, hostile, statblockId, descriptor };
 }

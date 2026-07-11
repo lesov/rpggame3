@@ -69,12 +69,13 @@ describe('statblock mapping', () => {
     expect(monsterForKind('undead', 2, 0.5)).toBe('skeleton');
     expect(monsterForKind('undead', 12, 0.5)).toBe('zombie');
   });
-  it('hostile actors carry a monster id; peaceful ones do not', () => {
+  it('every actor carries a fighting statblock; hostility is a separate flag', () => {
     const hostile = buildActor('brigand', 4, true, 0.5);
-    expect(hostile.monsterId).toBeDefined();
+    expect(hostile.statblockId).toBeDefined();
     expect(hostile.hostile).toBe(true);
     const peaceful = buildActor('merchant', 4, false, 0.5);
-    expect(peaceful.monsterId).toBeUndefined();
+    expect(peaceful.statblockId).toBeDefined(); // can still be attacked
+    expect(peaceful.hostile).toBe(false);
     expect(peaceful.descriptor).toMatch(/caravan/);
   });
 });
