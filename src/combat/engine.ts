@@ -9,6 +9,7 @@
  * DiceStream keyed by (seed, rngCalls), both stored on the state.
  */
 import type { PlayerCharacter } from '../player/types';
+import { getCatalogItem } from '../economy/catalog';
 import { DiceStream, opposedD20WinChance, versus, type RollBreakdown } from './dice';
 import { buildPlayerCombatant, martialArtsAttack } from './kits';
 import { buildEnemyCombatant, type Monster } from './monsters';
@@ -24,6 +25,10 @@ import type {
   InjurySeverity,
   PlayerActionId,
 } from './types';
+
+function potionLabel(id: string): string {
+  return getCatalogItem(id)?.name ?? 'Healing potion';
+}
 
 const MORALE_DC = { craven: 12, wild: 10, steadfast: 6, fearless: Infinity } as const;
 const RAGE_RESISTS = new Set(['slashing', 'piercing', 'bludgeoning']);
@@ -187,10 +192,11 @@ export function availableActions(s: CombatState): AvailableAction[] {
   });
 
   // Bonus actions
+  const nextPotion = p.resources.potionStack?.[0];
   out.push({
     id: 'potion',
-    label: 'Healing potion',
-    detail: `2d4+2, ${p.resources.potions} left`,
+    label: nextPotion ? potionLabel(nextPotion.id) : 'Healing potion',
+    detail: `${nextPotion?.heal ?? '2d4+2'}, ${p.resources.potions} left`,
     enabled: !bonusUsed && p.resources.potions > 0 && p.hp < p.maxHp,
     disabledReason: bonusUsed ? 'bonus action used' : p.resources.potions <= 0 ? 'none left' : p.hp >= p.maxHp ? 'unhurt' : undefined,
     isBonus: true,
@@ -312,10 +318,17 @@ export function chooseAction(state: CombatState, action: PlayerActionId): Combat
       };
       break;
     }
-    case 'potion':
+    case 'potion': {
       if (s.turn.bonusUsed || p.resources.potions <= 0) return state;
-      s.pendingRoll = { id: `potion-${s.seq}`, kind: 'potion', label: 'Healing potion', formula: '2d4+2' };
+      const charge = p.resources.potionStack?.[0];
+      s.pendingRoll = {
+        id: `potion-${s.seq}`,
+        kind: 'potion',
+        label: charge ? potionLabel(charge.id) : 'Healing potion',
+        formula: charge?.heal ?? '2d4+2',
+      };
       break;
+    }
     case 'heal-spell':
       if (s.turn.actionUsed || !p.resources.healSpells) return state;
       s.pendingRoll = { id: `heal-${s.seq}`, kind: 'heal-spell', label: 'Cure Wounds', formula: `1d8${fmtMod(healSpellMod(p))}` };
@@ -491,9 +504,11 @@ export function rollPending(state: CombatState): CombatState {
     }
     case 'potion': {
       s.turn.bonusUsed = true;
-      p.resources.potions -= 1;
-      const roll = dice.roll('2d4+2', 'Healing potion');
-      applyHealing(s, p, 'Healing potion', roll);
+      const charge = p.resources.potionStack?.shift();
+      p.resources.potions = p.resources.potionStack?.length ?? Math.max(0, p.resources.potions - 1);
+      const label = charge ? potionLabel(charge.id) : 'Healing potion';
+      const roll = dice.roll(charge?.heal ?? '2d4+2', label);
+      applyHealing(s, p, label, roll);
       maybeAutoEndTurn(s);
       break;
     }
@@ -746,4 +761,13 @@ function finish(s: CombatState, outcome: CombatState['outcome']): void {
 /** Inventory changes to persist after the battle (potions drunk). */
 export function potionsRemaining(s: CombatState): number {
   return s.player.resources.potions;
+}
+
+/** Remaining healing potions after the fight, counted by inventory id. */
+export function potionsRemainingById(s: CombatState): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const charge of s.player.resources.potionStack ?? []) {
+    counts[charge.id] = (counts[charge.id] ?? 0) + 1;
+  }
+  return counts;
 }

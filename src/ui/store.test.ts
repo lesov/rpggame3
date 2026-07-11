@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { buildWorldData, type WorldData } from '../data/worldLoader';
 import { MINUTES_PER_DAY, START_DATE, START_TIME, toOrdinal } from '../sim/calendar';
-import { initialState, makeReducer } from './store';
+import { initialState, makeReducer, settlementVendorsAt } from './store';
 import { makeTestCharacter } from '../combat/fixtures';
 import { planTravel, type TravelDestination } from '../player/travel';
+import { voselsOf, quantityOf } from '../economy/money';
 
 let wd: WorldData;
 
@@ -142,5 +143,85 @@ describe('game clock state', () => {
     }
     expect(s.pendingEncounter).toBeNull();
     expect(s.player?.location.cellId).toBe(target.cell);
+  });
+});
+
+describe('shopping', () => {
+  /** A fighter standing inside the first burg, holding 200 vosels. */
+  function playerInBurg() {
+    const burg = wd.world.burgs[0];
+    const pc = makeTestCharacter('fighter');
+    return {
+      burg,
+      player: {
+        ...pc,
+        inventory: pc.inventory.map((i) => (i.id === 'vosels' ? { ...i, quantity: 200 } : i)),
+        location: { ...pc.location, cellId: burg.cell, x: burg.x, y: burg.y, placeName: burg.name },
+      },
+    };
+  }
+
+  it('finds vendors at the player\'s settlement and opens a shop', () => {
+    const reducer = makeReducer(wd);
+    const { player } = playerInBurg();
+    const vendors = settlementVendorsAt(wd, player);
+    expect(vendors.length).toBeGreaterThan(0);
+
+    const s = reducer({ ...initialState(wd), player }, { type: 'openShop', vendors });
+    expect(s.screen).toBe('shop');
+    expect(s.shop?.vendors.length).toBe(vendors.length);
+  });
+
+  it('buys an item: vosels drop, item arrives, stock depletes', () => {
+    const reducer = makeReducer(wd);
+    const { player } = playerInBurg();
+    const vendors = settlementVendorsAt(wd, player);
+    // Pick a vendor and an affordable stock entry.
+    const vIdx = vendors.findIndex((v) => v.stock.some((e) => e.price <= 200 && e.qty > 0));
+    const vendor = vendors[vIdx];
+    const entryIndex = vendor.stock.findIndex((e) => e.price <= 200 && e.qty > 0);
+    const entry = vendor.stock[entryIndex];
+
+    let s = reducer({ ...initialState(wd), player }, { type: 'openShop', vendors });
+    s = reducer(s, { type: 'switchVendor', index: vIdx });
+    s = reducer(s, { type: 'buyItem', entryIndex, qty: 1 });
+    expect(voselsOf(s.player!)).toBe(200 - entry.price);
+    expect(quantityOf(s.player!, entry.itemId)).toBeGreaterThanOrEqual(1);
+    expect(s.shop!.vendors[vIdx].stock[entryIndex].qty).toBe(entry.qty - 1);
+  });
+
+  it('sells provisions for vosels and returns to the map on leave', () => {
+    const reducer = makeReducer(wd);
+    const { player } = playerInBurg();
+    const vendors = settlementVendorsAt(wd, player);
+    let s = reducer({ ...initialState(wd), player }, { type: 'openShop', vendors });
+    const before = voselsOf(s.player!);
+    s = reducer(s, { type: 'sellItem', itemId: 'provisions', qty: 1 });
+    expect(voselsOf(s.player!)).toBeGreaterThan(before);
+    expect(quantityOf(s.player!, 'provisions')).toBe(4);
+
+    s = reducer(s, { type: 'closeShop' });
+    expect(s.screen).toBe('map');
+    expect(s.shop).toBeNull();
+  });
+
+  it('equips a bought weapon and swaps the equipped slot', () => {
+    const reducer = makeReducer(wd);
+    const { player } = playerInBurg();
+    const withWeapon = {
+      ...player,
+      inventory: [...player.inventory, { id: 'longsword-fine', name: 'Fine longsword', quantity: 1, category: 'weapon' as const }],
+    };
+    const s = reducer({ ...initialState(wd), player: withWeapon }, { type: 'equipItem', itemId: 'longsword-fine' });
+    expect(s.player!.inventory.find((i) => i.id === 'longsword-fine')!.equipped).toBe(true);
+    expect(s.player!.inventory.find((i) => i.id === 'longsword')!.equipped).toBe(false);
+  });
+
+  it('opens a travelling trader capped at fine grade', () => {
+    const reducer = makeReducer(wd);
+    const { player } = playerInBurg();
+    const s = reducer({ ...initialState(wd), player }, { type: 'openTravelShop' });
+    expect(s.screen).toBe('shop');
+    expect(s.shop!.vendors[0].qualityCeiling).toBe('fine');
   });
 });

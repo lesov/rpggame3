@@ -43,8 +43,16 @@ export interface CombatantConditions {
   mockeryDisadvantage?: boolean; // disadvantage on next attack roll
 }
 
+/** A single carried healing potion: its inventory id and heal dice. */
+export interface PotionCharge {
+  id: string;
+  heal: string; // e.g. '2d4+2'
+}
+
 export interface CombatantResources {
   potions: number;
+  /** Carried healing potions, strongest first; drinking pops the front. */
+  potionStack?: PotionCharge[];
   secondWind?: number;
   rage?: number;
   feintAvailable?: boolean; // per-battle rogue feint is per-turn bonus action, tracked in turn

@@ -21,6 +21,38 @@ describe('class combat kits', () => {
     }
   });
 
+  it('uses an equipped better-grade weapon over the class default', () => {
+    const base = makeTestCharacter('fighter'); // longsword equipped, bonus 0
+    const baseAtk = buildPlayerCombatant(base).attacks[0];
+
+    const upgraded = {
+      ...base,
+      inventory: [
+        ...base.inventory.map((i) => (i.category === 'weapon' ? { ...i, equipped: false } : i)),
+        { id: 'longsword-masterwork', name: 'Masterwork longsword', quantity: 1, category: 'weapon' as const, equipped: true },
+      ],
+    };
+    const upAtk = buildPlayerCombatant(upgraded).attacks[0];
+    expect(upAtk.toHit!).toBe(baseAtk.toHit! + 2);
+    expect(upAtk.damageBonus).toBe(baseAtk.damageBonus + 2);
+    expect(upAtk.name).toContain('+2');
+  });
+
+  it('builds a strongest-first potion stack from carried healing potions', () => {
+    const pc = makeTestCharacter('fighter');
+    const withGreater = {
+      ...pc,
+      inventory: [
+        ...pc.inventory, // 2 healing potions
+        { id: 'greater-healing-potion', name: 'Greater healing potion', quantity: 1, category: 'consumable' as const },
+      ],
+    };
+    const c = buildPlayerCombatant(withGreater);
+    expect(c.resources.potions).toBe(3);
+    expect(c.resources.potionStack?.[0].id).toBe('greater-healing-potion'); // strongest first
+    expect(c.resources.potionStack?.[0].heal).toBe('4d4+4');
+  });
+
   it('casters get their signature cantrip', () => {
     expect(buildPlayerCombatant(makeTestCharacter('wizard')).attacks[1].name).toBe('Fire Bolt');
     expect(buildPlayerCombatant(makeTestCharacter('warlock')).attacks[1].name).toBe('Eldritch Blast');
