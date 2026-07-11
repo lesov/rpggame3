@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-11 13:22 CDT - codex - feature/codex/codex-panel
+
+- Status: started
+- Summary: Add an in-game Codex panel with the Duhi Troupe as the first entry, plus biography hyperlinks that open the relevant codex entry.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: (none yet)
+- UI review: pending-human-test
+- Blockers or coordination notes: Working on a dedicated branch per workflow. Leaving untracked source-world files untouched.
+
+## 2026-07-11 13:27 CDT - codex - feature/codex/codex-panel
+
+- Status: ready-for-review
+- Summary: Added a Codex tab and entry registry with The Duhi Troupe as the first entry. Character biography text now tokenizes known codex aliases and renders Duhi references as inline links that open the Codex panel on the matching entry.
+- Files changed: AGENT_CHANGELOG.md, src/lore/codex.ts, src/lore/codex.test.ts, src/ui/CodexPanel.tsx, src/ui/App.tsx, src/ui/CharacterBuilder.tsx, src/ui/store.tsx, src/ui/store.test.ts, src/ui/styles.css
+- Tests run: `npx vitest run src/lore/codex.test.ts src/ui/store.test.ts` — 10 tests passed; `npm run build` — passed (with existing Anthropic SDK browser externalization warnings and chunk-size warning); `npm test` — 174 tests passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: Codex UI and biography link behavior require human UI review before merge. Dev server started at http://localhost:5176/.
+
+## 2026-07-11 13:30 CDT - codex - feature/codex/codex-panel
+
+- Status: approved
+- Summary: Human approver tested the Codex UI and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/lore/codex.test.ts src/ui/store.test.ts` — 10 tests passed as of previous entry; `npm run build` — passed as of previous entry; `npm test` — 174 tests passed as of previous entry.
+- UI review: approved-by-human (2026-07-11)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
 ## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/unified-biography
 
 - Status: approved / merged

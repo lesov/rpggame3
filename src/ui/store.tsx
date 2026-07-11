@@ -53,7 +53,7 @@ export interface GameState {
   playing: boolean;
   speed: Speed;
   selection: Selection | null;
-  panelTab: 'events' | 'inspector' | 'character' | 'inventory' | 'travel';
+  panelTab: 'events' | 'inspector' | 'character' | 'inventory' | 'travel' | 'codex';
   options: RenderOptions;
   jump: JumpCommand | null;
   focus: { x: number; y: number } | null;
@@ -62,6 +62,7 @@ export interface GameState {
   combat: CombatState | null;
   pacing: PacingState;
   pendingEncounter: PendingEncounter | null;
+  selectedCodexId: string | null;
 }
 
 /** A travel leg the player can pick up again after an encounter resolves. */
@@ -82,6 +83,7 @@ export type GameAction =
   | { type: 'setSpeed'; speed: Speed }
   | { type: 'select'; selection: Selection }
   | { type: 'setTab'; tab: GameState['panelTab'] }
+  | { type: 'openCodex'; entryId: string }
   | { type: 'setOptions'; options: Partial<RenderOptions> }
   | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number }
   | { type: 'setPlayer'; player: PlayerCharacter }
@@ -151,6 +153,7 @@ export function initialState(wd: WorldData): GameState {
     combat: null,
     pacing: initialPacing,
     pendingEncounter: null,
+    selectedCodexId: null,
   };
 }
 
@@ -284,6 +287,8 @@ export function makeReducer(wd: WorldData) {
         return { ...state, selection: action.selection, panelTab: 'inspector', focus: null };
       case 'setTab':
         return { ...state, panelTab: action.tab };
+      case 'openCodex':
+        return { ...state, panelTab: 'codex', selectedCodexId: action.entryId };
       case 'setOptions':
         return { ...state, options: { ...state.options, ...action.options } };
       case 'jumpTo': {

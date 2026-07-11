@@ -51,6 +51,13 @@ describe('game clock state', () => {
     expect(next.time).toEqual(START_TIME);
   });
 
+  it('opens the codex tab with the selected entry', () => {
+    const reducer = makeReducer(wd);
+    const next = reducer(initialState(wd), { type: 'openCodex', entryId: 'duhi-troupe' });
+    expect(next.panelTab).toBe('codex');
+    expect(next.selectedCodexId).toBe('duhi-troupe');
+  });
+
   it('commits travel by advancing time, moving the player, and consuming provisions', () => {
     const reducer = makeReducer(wd);
     const origin = wd.world.burgs[0];
