@@ -154,6 +154,7 @@ function makePlayer(provisions = 5): PlayerCharacter {
   return {
     id: 'pc',
     name: 'Traveler',
+    gender: 'male',
     level: 1,
     xp: 0,
     classId: 'fighter',
@@ -162,8 +163,8 @@ function makePlayer(provisions = 5): PlayerCharacter {
     speciesName: 'Human',
     backgroundId: 'soldier',
     backgroundName: 'Soldier',
-    backstoryId: 'battlefield_witness',
-    backstoryTitle: 'Battlefield',
+    backstoryId: 'duhi_washout',
+    backstoryTitle: 'Duhi Troupe Washout',
     nationalityId: 1,
     nationalityName: 'Test State',
     religionId: 1,

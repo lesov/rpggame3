@@ -1,94 +1,55 @@
-import type { BackstoryRule } from './types';
+import { PRONOUNS, type BackstoryRule, type Gender } from './types';
 
-export const BACKSTORIES: BackstoryRule[] = [
-  {
-    id: 'escaped_prisoner',
-    title: 'Escaped from a Quiet Cell',
-    premise:
-      'You woke before dawn in a nameless holding cell, stripped of gear and marked for transfer. A sympathetic novice left the latch loose; you walked out wearing only the plain clothing issued to prisoners.',
-    powerExplanation:
-      'Your captivity followed years of hard lessons and secret drills, and the escape put that training under pressure for the first time.',
-    minorBonus: {
-      name: 'Hard to Break',
-      description: 'Once per long rest, add +1 to a saving throw against fear, exhaustion, or forced movement.',
-    },
-    suggestedBackgrounds: ['criminal', 'guard', 'soldier', 'wayfarer'],
-    spawnPreference: 'settlement-edge',
-  },
-  {
-    id: 'failed_initiate',
-    title: 'Failed Initiate of the Inner Rite',
-    premise:
-      'Your temple accepted you, trained you, and then rejected you after a rite went wrong. They sent you away in penitent clothing, forbidden to carry temple property.',
-    powerExplanation:
-      'Even a failed initiate carries years of discipline, doctrine, fasting, weaponless drills, and prayer.',
-    minorBonus: {
-      name: 'Rite Memory',
-      description: 'Once per long rest, add +1 to a Religion, Medicine, or Insight check tied to a sacred place or holy custom.',
-    },
-    suggestedBackgrounds: ['acolyte', 'hermit', 'sage', 'scribe'],
-    spawnPreference: 'faith-center',
-  },
-  {
-    id: 'battlefield_witness',
-    title: 'The Last One Standing',
-    premise:
-      'A levy, raid, or border clash swallowed everyone around you. You survived by instinct, woke beneath a burial cloth, and left the field before the scavengers returned.',
-    powerExplanation:
-      'You moved, endured, and remembered your training under blood and smoke.',
-    minorBonus: {
-      name: 'Battle Nerve',
-      description: 'Once per long rest, add +1 to initiative or to a Wisdom saving throw made during the first round of combat.',
-    },
-    suggestedBackgrounds: ['guard', 'soldier', 'farmer', 'noble'],
-    spawnPreference: 'border',
-  },
-  {
-    id: 'shipwrecked_pilgrim',
-    title: 'Thrown Back by the Sea',
-    premise:
-      'A pilgrim vessel broke apart in black water. Your pack, weapons, and companions are gone; only the soaked clothing you wore made landfall with you.',
-    powerExplanation:
-      'You survived the wreckage, cold, and reef-cut surf because your body and will were already tempered.',
-    minorBonus: {
-      name: 'Saltwise',
-      description: 'Once per long rest, add +1 to a Survival, Athletics, or Perception check made on a coast, river, or aboard a vessel.',
-    },
-    suggestedBackgrounds: ['sailor', 'merchant', 'guide', 'acolyte'],
-    spawnPreference: 'coast',
-  },
-  {
-    id: 'exiled_heir',
-    title: 'Hidden Bloodline',
-    premise:
-      'Someone powerful decided your name was dangerous. Loyal servants smuggled you away disguised as a penitent, then vanished before they could return your arms or coin.',
-    powerExplanation:
-      'Tutors, court drills, languages, etiquette, and guarded lessons in survival shaped you before exile stripped the trappings away.',
-    minorBonus: {
-      name: 'Old Bearing',
-      description: 'Once per long rest, add +1 to a Persuasion, History, or Insight check involving nobility, officers, or officials.',
-    },
-    suggestedBackgrounds: ['noble', 'scribe', 'guard', 'merchant'],
-    spawnPreference: 'settlement-edge',
-  },
-  {
-    id: 'wild_omen',
-    title: 'Chosen by a Bad Omen',
-    premise:
-      'The village seer named you the center of a coming disaster. Your kin dressed you for the road and sent you into the wild before panic turned violent.',
-    powerExplanation:
-      'The omen followed real signs: strange endurance, uncanny perception, and power surfacing under stress.',
-    minorBonus: {
-      name: 'Omen Sense',
-      description: 'Once per long rest, add +1 to a Nature, Arcana, or Perception check made in isolated or supernatural terrain.',
-    },
-    suggestedBackgrounds: ['guide', 'hermit', 'farmer', 'sage'],
-    spawnPreference: 'remote',
-  },
-];
+/**
+ * Every player character — custom or pregenerated — shares this one biography:
+ * a washout of the Duhi Troupe, cast out into a city to make a living from the
+ * Adventurers' Guild. The template is filled per character with name, class,
+ * gender pronouns (binary he/she), and the starting city.
+ */
+export const DUHI_BIOGRAPHY_TEMPLATE = `For as long as [Name] could remember, life was defined by the cold, regimented walls of the Duhi Troupe's secret facility. Plucked from obscurity at a tender age, [Name]'s natural aptitude quickly caught the attention of the instructors, who began molding [him/her] into a weapon of singular purpose: a master [Class].
 
-export function getBackstory(id: BackstoryRule['id']): BackstoryRule {
-  const story = BACKSTORIES.find((b) => b.id === id);
-  if (!story) throw new Error(`Unknown backstory: ${id}`);
-  return story;
+For years, [Name] excelled, surviving the grueling trials and advancing seamlessly from one brutal tier of instruction to the next. By age eighteen, the finish line was in sight—only two years remained to complete the ultimate mastery of the craft.
+
+Then came the shattering verdict. Without warning, the masters declared that [Name] lacked the final, intangible spark required to truly graduate. Deemed an incomplete project, [he/she] was abruptly severed from the only home [he/she] had ever known and cast out into the sprawling, chaotic streets of [City]—entirely on [his/her] own for the first time in [his/her] life.
+
+Stranded in a world without structure, [Name] quickly learned that the "incomplete" training of the Duhi Troupe was still far superior to anything the civilian world had to offer. To secure food and shelter, [he/she] enlisted in the local Adventurers' Guild. What the masters saw as a failure, the guild saw as an elite asset. Over the last three years, [Name] has navigated the cutthroat world of freelance contracting, relying on [his/her] lethal foundations to rise to the Bronze rank.
+
+Though the masters of the Duhi Troupe discarded [him/her], [Name] is proving on the streets of [City] that a weapon doesn't need a certificate of completion to draw blood.`;
+
+export const DUHI_WASHOUT: BackstoryRule = {
+  id: 'duhi_washout',
+  title: 'Duhi Troupe Washout',
+  biographyTemplate: DUHI_BIOGRAPHY_TEMPLATE,
+  minorBonus: {
+    name: 'Troupe Foundations',
+    description:
+      'Your elite conditioning never fully left you. Once per long rest, add +1 to a saving throw or an ability check that relies on trained discipline, reflex, or endurance.',
+  },
+};
+
+export const BACKSTORIES: BackstoryRule[] = [DUHI_WASHOUT];
+
+export function getBackstory(_id?: BackstoryRule['id']): BackstoryRule {
+  // There is only one canonical biography.
+  return DUHI_WASHOUT;
+}
+
+export interface BiographyFields {
+  name: string;
+  className: string;
+  city: string;
+  gender: Gender;
+}
+
+/** Fill the shared biography template for a specific character. */
+export function fillBiography(fields: BiographyFields, template: string = DUHI_BIOGRAPHY_TEMPLATE): string {
+  const p = PRONOUNS[fields.gender];
+  return template
+    .replaceAll('[Name]', fields.name)
+    .replaceAll('[Class]', fields.className)
+    .replaceAll('[City]', fields.city)
+    .replaceAll('[he/she]', p.subject)
+    .replaceAll('[him/her]', p.object)
+    .replaceAll('[his/her]', p.possessive)
+    .replaceAll('[himself/herself]', p.reflexive);
 }

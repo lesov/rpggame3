@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { buildPlayerCharacter, validateCharacterInput } from '../player/character';
-import { BACKSTORIES } from '../player/backgrounds';
+import { DUHI_WASHOUT } from '../player/backgrounds';
 import { PREGENERATED_CHARACTERS } from '../player/pregens';
 import {
   ABILITY_LABELS,
@@ -14,7 +14,7 @@ import {
   suggestAbilityScores,
 } from '../player/rules2024';
 import { findReputation } from '../player/reputation';
-import { ABILITIES, type Ability, type CharacterBuildInput, type CharacterClassId, type OriginBackgroundId, type PlayerCharacter, type Skill, type SpeciesId, type BackstoryId } from '../player/types';
+import { ABILITIES, type Ability, type CharacterBuildInput, type CharacterClassId, type Gender, type OriginBackgroundId, type PlayerCharacter, type Skill, type SpeciesId } from '../player/types';
 import { useGame } from './store';
 
 function optionName(id: string, options: { id: string; name: string }[]): string {
@@ -78,8 +78,10 @@ function CharacterSheet({ player }: { player: PlayerCharacter }) {
       </div>
 
       <div className="section">
-        <h3>Background</h3>
-        <p className="story-text">{player.story}</p>
+        <h3>Biography</h3>
+        {player.story.split(/\n\n+/).map((para, i) => (
+          <p className="story-text" key={i}>{para}</p>
+        ))}
         <div className="kv"><span>Bonus</span><span>{player.minorBonus.name}: {player.minorBonus.description}</span></div>
       </div>
 
@@ -105,10 +107,10 @@ export function CharacterBuilder() {
   const nations = useMemo(() => wd.world.states.filter((s) => s.i > 0), [wd]);
   const religions = useMemo(() => wd.world.religions.filter((r) => r.i > 0), [wd]);
   const [name, setName] = useState('Rook');
+  const [gender, setGender] = useState<Gender>('male');
   const [classId, setClassId] = useState<CharacterClassId>('fighter');
   const [speciesId, setSpeciesId] = useState<SpeciesId>('human');
   const [backgroundId, setBackgroundId] = useState<OriginBackgroundId>('soldier');
-  const [backstoryId, setBackstoryId] = useState<BackstoryId>('battlefield_witness');
   const [nationalityId, setNationalityId] = useState(nations[0]?.i ?? 1);
   const [religionId, setReligionId] = useState(religions[0]?.i ?? 1);
   const [abilityScores, setAbilityScores] = useState(() => suggestAbilityScores('fighter', 'soldier'));
@@ -123,17 +125,16 @@ export function CharacterBuilder() {
   const cls = getClassRule(classId);
   const species = getSpeciesRule(speciesId);
   const background = getBackgroundRule(backgroundId);
-  const backstory = BACKSTORIES.find((b) => b.id === backstoryId) ?? BACKSTORIES[0];
   const conMod = Math.floor((abilityScores.con - 10) / 2);
   const dexMod = Math.floor((abilityScores.dex - 10) / 2);
   const hp = Math.max(1, cls.hitDie + conMod);
   const ac = 10 + dexMod;
   const input: CharacterBuildInput = {
     name,
+    gender,
     classId,
     speciesId,
     backgroundId,
-    backstoryId,
     nationalityId,
     religionId,
     abilityScores,
@@ -189,6 +190,13 @@ export function CharacterBuilder() {
         </label>
         <div className="form-grid">
           <label className="field">
+            <span>Gender</span>
+            <select value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </label>
+          <label className="field">
             <span>Class</span>
             <select value={classId} onChange={(e) => setClassId(e.target.value as CharacterClassId)}>
               {CLASS_RULES.map((rule) => <option key={rule.id} value={rule.id}>{rule.name}</option>)}
@@ -204,12 +212,6 @@ export function CharacterBuilder() {
             <span>Background</span>
             <select value={backgroundId} onChange={(e) => setBackgroundId(e.target.value as OriginBackgroundId)}>
               {BACKGROUND_RULES.map((rule) => <option key={rule.id} value={rule.id}>{rule.name}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span>Backstory</span>
-            <select value={backstoryId} onChange={(e) => setBackstoryId(e.target.value as BackstoryId)}>
-              {BACKSTORIES.map((story) => <option key={story.id} value={story.id}>{story.title}</option>)}
             </select>
           </label>
           <label className="field">
@@ -278,9 +280,9 @@ export function CharacterBuilder() {
         <div className="kv"><span>Origin feat</span><span>{background.feat}</span></div>
         <div className="kv"><span>Features</span><span>{cls.levelOneFeatures.join(', ')}</span></div>
         <div className="kv"><span>Species</span><span>{optionName(speciesId, SPECIES_RULES)}: {species.traits.join(', ')}</span></div>
-        <div className="kv"><span>Story</span><span>{backstory.premise}</span></div>
-        <div className="kv"><span>Training</span><span>{backstory.powerExplanation}</span></div>
-        <div className="kv"><span>Minor bonus</span><span>{backstory.minorBonus.name}: {backstory.minorBonus.description}</span></div>
+        <div className="kv"><span>Backstory</span><span>{DUHI_WASHOUT.title} — cast out of the Troupe into a city of your nation to make a living from the Adventurers' Guild.</span></div>
+        <div className="kv"><span>Minor bonus</span><span>{DUHI_WASHOUT.minorBonus.name}: {DUHI_WASHOUT.minorBonus.description}</span></div>
+        <div className="kv"><span>Start</span><span>Assigned when you begin: a non-capital city in your chosen nation.</span></div>
         <div className="kv"><span>Inventory</span><span>Climate clothing, one proficient weapon, 2 healing potions, 5 days provisions, and 118 vosels. Wizards also receive a spellbook.</span></div>
       </div>
 

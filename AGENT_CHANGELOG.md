@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/unified-biography
+
+- Status: ready-for-review
+- Summary: Give every player character (custom and pregenerated) the same canonical "Duhi Troupe washout" biography, filled with the character's name, class, gender pronouns (binary he/she), and starting city. The starting location is now a non-capital city in the character's nation (deterministic per character, larger towns preferred), whose name is referenced verbatim in the biography ("cast out into the streets of [City]"). Collapsed the six-way backstory system to one canonical entry (`duhi_washout`, "Duhi Troupe Washout") with a single shared minor bonus; added a binary `gender: 'male' | 'female'` field driving pronoun substitution (he/him/his ↔ she/her/her) via a `fillBiography` templater; removed the backstory picker and added a gender selector in the builder. Plan approved by human ("proceed as written").
+- Files changed: src/player/types.ts (BackstoryId → single literal, Gender/PRONOUNS/PronounSet, gender on CharacterBuildInput + PlayerCharacter, removed SpawnPreference/backstoryId-input), src/player/backgrounds.ts (rewritten: DUHI_BIOGRAPHY_TEMPLATE, DUHI_WASHOUT, getBackstory, fillBiography), src/player/spawn.ts (chooseStartingLocation picks non-capital burg, city name → placeName; 4-arg signature), src/player/character.ts (fills biography, threads gender), src/player/pregens.ts (each pregen gets gender, backstoryId removed), src/combat/fixtures.ts (gender + duhi_washout), src/ui/CharacterBuilder.tsx (gender select, Biography paragraphs, removed backstory dropdown), src/player/character.test.ts + src/player/travel.test.ts (fixtures + new city-start/pronoun assertions), AGENT_CHANGELOG.md.
+- Tests run: `npx vitest run` — 170 passed (21 files, incl. new non-capital-city-start and male/female pronoun-substitution assertions); `npx tsc --noEmit` — clean; `npm run build` — passed. Headless render check: both male and female biographies substitute name/class/city/pronouns correctly and read naturally, no stray "they".
+- UI review: pending-human-test
+- Blockers or coordination notes: Touches the codex-authored player module (character/spawn/backgrounds/pregens) — a content/design change, not a mechanics rewrite. No merge to main without explicit human approval.
+
 ## 2026-07-10 - claude-fable-5 - feature/claude-fable-5/travel-encounters
 
 - Status: approved / merged

@@ -68,15 +68,23 @@ export type OriginBackgroundId =
   | 'soldier'
   | 'wayfarer';
 
-export type BackstoryId =
-  | 'escaped_prisoner'
-  | 'failed_initiate'
-  | 'battlefield_witness'
-  | 'shipwrecked_pilgrim'
-  | 'exiled_heir'
-  | 'wild_omen';
+/** All characters share the one canonical biography. */
+export type BackstoryId = 'duhi_washout';
 
-export type SpawnPreference = 'wilderness' | 'settlement-edge' | 'coast' | 'border' | 'faith-center' | 'remote';
+/** The game uses binary gender for pronouns (he/she). */
+export type Gender = 'male' | 'female';
+
+export interface PronounSet {
+  subject: string; // he / she
+  object: string; // him / her
+  possessive: string; // his / her
+  reflexive: string; // himself / herself
+}
+
+export const PRONOUNS: Record<Gender, PronounSet> = {
+  male: { subject: 'he', object: 'him', possessive: 'his', reflexive: 'himself' },
+  female: { subject: 'she', object: 'her', possessive: 'her', reflexive: 'herself' },
+};
 
 export interface ClassRule {
   id: CharacterClassId;
@@ -112,14 +120,12 @@ export interface BackgroundRule {
 export interface BackstoryRule {
   id: BackstoryId;
   title: string;
-  premise: string;
-  powerExplanation: string;
+  /** the shared biography, with [Name] [Class] [City] [he/she] [him/her] [his/her] tokens */
+  biographyTemplate: string;
   minorBonus: {
     name: string;
     description: string;
   };
-  suggestedBackgrounds: OriginBackgroundId[];
-  spawnPreference: SpawnPreference;
 }
 
 export interface InventoryItem {
@@ -160,6 +166,7 @@ export interface PlayerReputations {
 export interface PlayerCharacter {
   id: string;
   name: string;
+  gender: Gender;
   level: 1;
   xp: 0;
   classId: CharacterClassId;
@@ -198,10 +205,10 @@ export interface PlayerCharacter {
 
 export interface CharacterBuildInput {
   name: string;
+  gender: Gender;
   classId: CharacterClassId;
   speciesId: SpeciesId;
   backgroundId: OriginBackgroundId;
-  backstoryId: BackstoryId;
   nationalityId: number;
   religionId: number;
   abilityScores: AbilityScores;
