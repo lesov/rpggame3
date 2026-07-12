@@ -55,6 +55,23 @@ describe('buying', () => {
     const { error } = buyItem(buyer(500), shop, 0, 3);
     expect(error).toBeTruthy();
   });
+
+  it('refuses a purchase that would overload the carrier', () => {
+    // A STR 8 buyer (cap 120 lb) already near capacity cannot take on 45 lb of mail.
+    const heavy = {
+      ...buyer(1000),
+      abilityScores: { ...buyer().abilityScores, str: 8 },
+      inventory: [
+        { id: 'vosels', name: 'Vosels', quantity: 1000, category: 'coin' as const },
+        { id: 'half-plate', name: 'Half plate', quantity: 2, category: 'armor' as const }, // 80 lb, cap 120
+      ],
+    };
+    const shop = shopWith({ itemId: 'scale-mail', price: 55, qty: 1 }); // 45 lb -> 125 > 120
+    const { player, error } = buyItem(heavy, shop, 0, 1);
+    expect(error).toBe('That would overload you.');
+    expect(voselsOf(player)).toBe(1000); // nothing spent
+    expect(quantityOf(player, 'scale-mail')).toBe(0);
+  });
 });
 
 describe('selling', () => {

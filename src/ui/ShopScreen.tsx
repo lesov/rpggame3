@@ -1,7 +1,8 @@
 import { useGame } from './store';
-import { getCatalogItem, type ItemQuality } from '../economy/catalog';
+import { getCatalogItem, weightOf, type ItemQuality } from '../economy/catalog';
 import { voselsOf } from '../economy/money';
 import { sellPrice, isSellable } from '../economy/transaction';
+import { carriedWeight, carryCapacity, wouldExceedCapacity } from '../economy/encumbrance';
 
 const QUALITY_LABEL: Record<ItemQuality, string> = {
   common: 'Common',
@@ -21,6 +22,8 @@ export function ShopScreen() {
 
   const vendor = session.vendors[session.index];
   const vosels = voselsOf(player);
+  const carried = carriedWeight(player);
+  const capacity = carryCapacity(player);
 
   const sellable = player.inventory.filter((i) => isSellable(player, i.id));
 
@@ -36,6 +39,7 @@ export function ShopScreen() {
           </div>
           <div className="shop-purse" data-testid="shop-purse">
             <strong>{vosels}</strong> vosels
+            <span className="shop-load"> · {carried}/{capacity} lb</span>
           </div>
           <button className="secondary-action" onClick={() => dispatch({ type: 'closeShop' })}>
             Leave
@@ -65,10 +69,16 @@ export function ShopScreen() {
                 if (entry.qty <= 0) return null;
                 const cat = getCatalogItem(entry.itemId);
                 const afford = vosels >= entry.price;
+                const tooHeavy = wouldExceedCapacity(player, entry.itemId, 1);
+                const unit = weightOf(entry.itemId);
+                const reason = !afford ? 'Not enough vosels' : tooHeavy ? 'Too heavy to carry' : undefined;
                 return (
                   <div className="shop-row" key={`${entry.itemId}-${index}`}>
                     <div className="shop-item">
-                      <span className="shop-item-name">{cat?.name ?? entry.itemId}</span>
+                      <span className="shop-item-name">
+                        {cat?.name ?? entry.itemId}
+                        {unit > 0 && <span className="shop-item-weight"> · {unit} lb</span>}
+                      </span>
                       {cat && <QualityBadge quality={cat.quality} />}
                       {cat?.note && <span className="shop-item-note">{cat.note}</span>}
                     </div>
@@ -76,8 +86,8 @@ export function ShopScreen() {
                     <span className="shop-price">{entry.price}</span>
                     <button
                       className="primary-action buy"
-                      disabled={!afford}
-                      title={afford ? undefined : 'Not enough vosels'}
+                      disabled={!afford || tooHeavy}
+                      title={reason}
                       onClick={() => dispatch({ type: 'buyItem', entryIndex: index, qty: 1 })}
                     >
                       Buy

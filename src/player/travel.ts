@@ -2,6 +2,7 @@ import { findNearby, type NearbyItem } from '../data/inspect';
 import type { Route } from '../data/types';
 import type { WorldData } from '../data/worldLoader';
 import { MINUTES_PER_DAY, type GameTime } from '../sim/calendar';
+import { travelSpeedFactor } from '../economy/encumbrance';
 import type { PlayerCharacter, PlayerLocation } from './types';
 
 export type TravelMode = 'road' | 'offroad' | 'boat';
@@ -325,11 +326,13 @@ export function planTravel(
     : effectiveMode === 'boat'
       ? directDistance * 1.25
     : directDistance;
-  const mph = effectiveMode === 'road' && route
+  // A heavy pack slows you on foot; a crewed boat is unaffected.
+  const loadFactor = effectiveMode === 'boat' ? 1 : travelSpeedFactor(player);
+  const mph = (effectiveMode === 'road' && route
     ? route.group === 'roads' ? ROAD_MPH : TRAIL_MPH
     : effectiveMode === 'boat'
       ? BOAT_MPH
-    : OFFROAD_BASE_MPH / biomeMultiplier;
+    : OFFROAD_BASE_MPH / biomeMultiplier) * loadFactor;
   const travelDayOnly = effectiveMode === 'boat' ? false : dayOnly;
   const travelHours = distanceMi / mph;
   const elapsedMinutes = elapsedMinutesForTravel(travelHours * 60, startTime, travelDayOnly);
@@ -342,11 +345,12 @@ export function planTravel(
     : effectiveMode === 'road' && route
       ? roadLabel
     : 'Off-road walking';
+  const loadNote = loadFactor < 0.999 ? `, ${loadFactor.toFixed(2)}x under load` : '';
   const paceDetail = effectiveMode === 'boat'
     ? `${paceLabel}, ${mph.toFixed(1)} mph average; sails day and night`
     : effectiveMode === 'road' && route
-      ? `${paceLabel}, ${mph.toFixed(1)} mph average`
-    : `${paceLabel}, ${mph.toFixed(1)} mph after ${biomeMultiplier.toFixed(2)}x terrain`;
+      ? `${paceLabel}, ${mph.toFixed(1)} mph average${loadNote}`
+    : `${paceLabel}, ${mph.toFixed(1)} mph after ${biomeMultiplier.toFixed(2)}x terrain${loadNote}`;
   const activeTravelLabel = effectiveMode === 'boat'
     ? 'sailing hr'
     : effectiveMode === 'road' && route?.group === 'roads'
