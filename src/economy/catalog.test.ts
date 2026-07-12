@@ -49,9 +49,17 @@ describe('item catalog', () => {
     expect(common.every((c) => qualityRank(c.quality) === 0)).toBe(true);
     expect(common.some((c) => c.id === 'greater-healing-potion')).toBe(false);
     expect(common.some((c) => c.id === 'vosels')).toBe(false);
+    expect(common.some((c) => c.id === 'sealed-guild-letter')).toBe(false);
 
     const all = catalogUpTo('masterwork', ['consumable']);
     expect(all.some((c) => c.id === 'superior-healing-potion')).toBe(true);
     expect(all.every((c) => c.category === 'consumable')).toBe(true);
+  });
+
+  it('keeps the sealed guild letter as a weightless quest item', () => {
+    const letter = getCatalogItem('sealed-guild-letter')!;
+    expect(letter.category).toBe('quest');
+    expect(letter.basePrice).toBe(0);
+    expect(letter.weight).toBe(0);
   });
 });

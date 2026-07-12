@@ -2,6 +2,24 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-12 15:26 CDT - codex - feature/codex/starting-quest
+
+- Status: approved
+- Summary: Human tested the starting quest, sealed guild letter inventory item, and Quests tab in the live UI and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npm test` — 214 passed; `npm run build` — passed as of the ready-for-review state.
+- UI review: approved-by-human (2026-07-12)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-12 14:51 CDT - codex - feature/codex/starting-quest
+
+- Status: ready-for-review
+- Summary: Added a starting Adventurers' Guild courier quest for every new character and pregen: a named local guild head gives the player a sealed letter for the regional leader in the nation's capital, with explicit steps to deliver it, wait for the penned response, and return immediately. The sealed guild letter is now a weightless, non-sellable quest item in starting inventory, and a new Quests tab displays active quest details with a destination jump button.
+- Files changed: AGENT_CHANGELOG.md, src/quests/types.ts, src/quests/startQuest.ts, src/quests/startQuest.test.ts, src/player/types.ts, src/player/character.ts, src/player/character.test.ts, src/player/travel.test.ts, src/combat/fixtures.ts, src/economy/catalog.ts, src/economy/catalog.test.ts, src/ui/App.tsx, src/ui/QuestPanel.tsx, src/ui/CharacterBuilder.tsx, src/ui/store.tsx, src/ui/styles.css
+- Tests run: `npm test` — 214 passed; `npm run build` — passed (existing Anthropic SDK browser-externalization warnings and chunk-size warning only).
+- UI review: pending-human-test
+- Blockers or coordination notes: Dev server is running at http://localhost:5176/ for human UI review. Headless Playwright smoke could not run because Chromium is missing `libnspr4.so`; HTTP check returned 200 OK. Leaving untracked source-world files untouched.
+
 ## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/item-weights
 
 - Status: approved / merged

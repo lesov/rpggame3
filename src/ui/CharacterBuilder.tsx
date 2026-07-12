@@ -305,7 +305,8 @@ export function CharacterBuilder() {
         <div className="kv"><span>Backstory</span><span>{DUHI_WASHOUT.title} — cast out of the Troupe into a city of your nation to make a living from the Adventurers' Guild.</span></div>
         <div className="kv"><span>Minor bonus</span><span>{DUHI_WASHOUT.minorBonus.name}: {DUHI_WASHOUT.minorBonus.description}</span></div>
         <div className="kv"><span>Start</span><span>Assigned when you begin: a non-capital city in your chosen nation.</span></div>
-        <div className="kv"><span>Inventory</span><span>Climate clothing, one proficient weapon, 2 healing potions, 5 days provisions, and 118 vosels. Wizards also receive a spellbook.</span></div>
+        <div className="kv"><span>Inventory</span><span>Climate clothing, one proficient weapon, 2 healing potions, 5 days provisions, 118 vosels, and a sealed guild letter. Wizards also receive a spellbook.</span></div>
+        <div className="kv"><span>Quest</span><span>Deliver the sealed letter to the regional Adventurers' Guild leader in your nation's capital.</span></div>
       </div>
 
       {(validation.length > 0 || error) && (

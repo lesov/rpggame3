@@ -12,6 +12,7 @@ import {
 import { chooseStartingLocation } from './spawn';
 import { buildNeutralReputations } from './reputation';
 import type { CharacterBuildInput, CharacterClassId, PlayerCharacter, Skill } from './types';
+import { createStartingQuest, SEALED_GUILD_LETTER_ID } from '../quests/startQuest';
 
 function slug(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'player';
@@ -93,6 +94,17 @@ export function buildPlayerCharacter(
     { name: input.name.trim(), className: cls.name, city: location.placeName, gender: input.gender },
     backstory.biographyTemplate,
   );
+  const startingQuest = createStartingQuest(wd, location, input.name.trim(), state.i, createdAt);
+  const inventory = [
+    ...startingInventoryForCharacter(cls.id, startClimate.temp),
+    {
+      id: SEALED_GUILD_LETTER_ID,
+      name: 'Sealed guild letter',
+      quantity: 1,
+      category: 'quest' as const,
+      note: `For ${startingQuest.targetName} in ${startingQuest.destination.placeName}.`,
+    },
+  ];
 
   return {
     id: `pc-${slug(input.name)}-${state.i}-${input.classId}`,
@@ -128,7 +140,8 @@ export function buildPlayerCharacter(
     story,
     powerExplanation: trainingLine,
     minorBonus: backstory.minorBonus,
-    inventory: startingInventoryForCharacter(cls.id, startClimate.temp),
+    inventory,
+    quests: [startingQuest],
     reputations: buildNeutralReputations(wd),
     location,
     createdAt,

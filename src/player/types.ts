@@ -1,4 +1,5 @@
 import type { GameDate } from '../sim/calendar';
+import type { Quest } from '../quests/types';
 
 export const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
 export type Ability = (typeof ABILITIES)[number];
@@ -132,7 +133,7 @@ export interface InventoryItem {
   id: string;
   name: string;
   quantity: number;
-  category: 'clothing' | 'weapon' | 'armor' | 'tool' | 'gear' | 'consumable' | 'coin';
+  category: 'clothing' | 'weapon' | 'armor' | 'tool' | 'gear' | 'consumable' | 'coin' | 'quest';
   equipped?: boolean;
   note?: string;
 }
@@ -198,6 +199,7 @@ export interface PlayerCharacter {
   powerExplanation: string;
   minorBonus: BackstoryRule['minorBonus'];
   inventory: InventoryItem[];
+  quests: Quest[];
   reputations: PlayerReputations;
   location: PlayerLocation;
   createdAt: GameDate;

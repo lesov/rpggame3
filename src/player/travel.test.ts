@@ -184,6 +184,7 @@ function makePlayer(provisions = 5): PlayerCharacter {
     powerExplanation: 'Training.',
     minorBonus: { name: 'Bonus', description: 'Test.' },
     inventory: [{ id: 'provisions', name: 'Food provisions', quantity: provisions, category: 'gear' }],
+    quests: [],
     reputations: { cultures: [], religions: [] },
     location: { cellId: 0, x: 0, y: 0, stateId: 1, stateName: 'Test State', placeName: 'Origin', reason: 'test' },
     createdAt: { year: 1181, month: 1, day: 1 },

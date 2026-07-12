@@ -56,7 +56,7 @@ export interface GameState {
   playing: boolean;
   speed: Speed;
   selection: Selection | null;
-  panelTab: 'events' | 'inspector' | 'character' | 'inventory' | 'travel' | 'codex';
+  panelTab: 'events' | 'inspector' | 'character' | 'inventory' | 'travel' | 'quests' | 'codex';
   options: RenderOptions;
   jump: JumpCommand | null;
   focus: { x: number; y: number } | null;
