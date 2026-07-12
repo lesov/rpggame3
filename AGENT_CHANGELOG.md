@@ -4,6 +4,15 @@ Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
 ## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/item-weights
 
+- Status: approved / merged
+- Summary: Human tested item weights and the carry-capacity limit in the live UI (Load bar + per-item weight in the Inventory panel, weights + disabled over-capacity Buy in the shop, slower travel under load) and stated their check passed, explicitly authorizing the merge ("my check passed, merge it"). Merged feature/claude-fable-5/item-weights into main with a --no-ff merge commit. Push deferred to the human per their instruction; no release tag requested.
+- Files changed: AGENT_CHANGELOG.md (this entry); merge of the item-weights branch (see prior entry).
+- Tests run: `npx vitest run` — 211 passed; `npx tsc --noEmit` — clean; `npm run build` — passed (as of the ready-for-review state).
+- UI review: approved-by-human (2026-07-11)
+- Blockers or coordination notes: main is merged locally but NOT pushed — the human will push manually. Do not push, re-tag, or amend main.
+
+## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/item-weights
+
 - Status: ready-for-review
 - Summary: Give every item a weight and cap what a character can carry. Carry capacity = 15 × Strength (lb), a hard cap — buying is refused if it would overload you (no D&D graduated-encumbrance tiers). Coins (vosels) are weightless. Heavier loads slow overland travel continuously: no effect up to a ~50% load, then walking speed falls linearly to a 0.6× floor at the cap (boat travel unaffected). Combat out of scope (hard-cap model has no speed-penalty tier). Weights live on the catalog; the few non-shop starting items (clothing, spellbook) were added to the catalog at basePrice 0 so weight resolves for everything.
 - Files changed: src/economy/catalog.ts (weight field + WEAPON_WEIGHT + clothing/spellbook entries + weightOf + DEFAULT_ITEM_WEIGHT), new src/economy/encumbrance.ts (carriedWeight, carryCapacity=15×STR, remainingCapacity, wouldExceedCapacity, loadRatio, travelSpeedFactor) + encumbrance.test.ts, src/economy/transaction.ts (buyItem capacity gate) + transaction.test.ts, src/player/travel.ts (non-boat mph × travelSpeedFactor + paceDetail "under load") + travel.test.ts, src/economy/catalog.test.ts (weights), src/ui/InventoryPanel.tsx (Load line + bar + per-item weight), src/ui/ShopScreen.tsx (weight column + disabled over-capacity Buy + load readout), src/ui/styles.css, AGENT_CHANGELOG.md.
