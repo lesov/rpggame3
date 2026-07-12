@@ -108,6 +108,7 @@ function potion(id: string, name: string, quality: ItemQuality, basePrice: numbe
 export const CATALOG: CatalogItem[] = [
   // --- Currency (never sold; here so lookups by id always resolve) ---
   { id: 'vosels', name: 'Vosels', category: 'coin', quality: 'common', basePrice: 0, weight: 0, note: 'Common global currency.' },
+  { id: 'sealed-guild-letter', name: 'Sealed guild letter', category: 'quest', quality: 'common', basePrice: 0, weight: 0, note: 'A wax-sealed letter entrusted by the local Adventurers\' Guild.' },
 
   // --- Weapons: the 8 class weapons at common, plus fine & masterwork grades ---
   weapon('battleaxe', 'Battleaxe', 'common', 20, 'battleaxe', 0, 'A serviceable footman\'s axe.'),

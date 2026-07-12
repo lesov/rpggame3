@@ -182,10 +182,17 @@ describe('player character creation', () => {
     expect(pc.xp).toBe(0);
     expect(pc.proficiencyBonus).toBe(2);
     expect(pc.maxHp).toBeGreaterThan(1);
-    expect(ids).toEqual(['robe', 'sandals', 'longsword', 'healing-potion', 'provisions', 'vosels']);
+    expect(ids).toEqual(['robe', 'sandals', 'longsword', 'healing-potion', 'provisions', 'vosels', 'sealed-guild-letter']);
     expect(pc.inventory.find((item) => item.id === 'healing-potion')?.quantity).toBe(2);
     expect(pc.inventory.find((item) => item.id === 'provisions')?.quantity).toBe(5);
     expect(pc.inventory.find((item) => item.id === 'vosels')?.quantity).toBe(118);
+    expect(pc.inventory.find((item) => item.id === 'sealed-guild-letter')?.category).toBe('quest');
+    expect(pc.inventory.find((item) => item.id === 'sealed-guild-letter')?.note).toContain('Testburg');
+    expect(pc.quests).toHaveLength(1);
+    expect(pc.quests[0].status).toBe('active');
+    expect(pc.quests[0].destination.placeName).toBe('Testburg');
+    expect(pc.quests[0].instructions).toContain('wait while it is penned and sealed');
+    expect(pc.quests[0].steps.map((step) => step.status)).toEqual(['active', 'pending', 'pending']);
     expect(pc.cultureId).toBe(1);
     expect(pc.location.stateId).toBe(1);
   });
@@ -203,7 +210,7 @@ describe('player character creation', () => {
 
   it('uses shoes and coat instead when the start climate is cold', () => {
     const pc = buildPlayerCharacter(validInput(), makeWorld(0), START_DATE);
-    expect(pc.inventory.map((item) => item.id)).toEqual(['shoes', 'coat', 'longsword', 'healing-potion', 'provisions', 'vosels']);
+    expect(pc.inventory.map((item) => item.id)).toEqual(['shoes', 'coat', 'longsword', 'healing-potion', 'provisions', 'vosels', 'sealed-guild-letter']);
   });
 
   it('gives each class one weapon covered by class proficiency', () => {
@@ -261,6 +268,9 @@ describe('player character creation', () => {
       expect(pc.name.length).toBeGreaterThan(2);
       expect(ids).toContain(startingWeaponForClass(input.classId).id);
       expectTravelKit(ids);
+      expect(ids).toContain('sealed-guild-letter');
+      expect(pc.quests).toHaveLength(1);
+      expect(pc.quests[0].status).toBe('active');
       expect(pc.reputations.cultures).toHaveLength(wd.world.cultures.length);
       expect(pc.reputations.religions).toHaveLength(wd.world.religions.filter((religion) => religion.i > 0).length);
       expect([...pc.reputations.cultures, ...pc.reputations.religions].every((entry) => entry.label === 'Neutral')).toBe(true);

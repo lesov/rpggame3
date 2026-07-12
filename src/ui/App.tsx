@@ -12,6 +12,7 @@ import { TravelPanel } from './TravelPanel';
 import { EncounterModal, ResumeBanner } from './EncounterModal';
 import { CodexPanel } from './CodexPanel';
 import { ShopScreen } from './ShopScreen';
+import { QuestPanel } from './QuestPanel';
 
 function LayerToggles() {
   const { state, dispatch } = useGame();
@@ -88,6 +89,12 @@ function SidePanel() {
           Travel
         </button>
         <button
+          className={state.panelTab === 'quests' ? 'tab active' : 'tab'}
+          onClick={() => dispatch({ type: 'setTab', tab: 'quests' })}
+        >
+          Quests
+        </button>
+        <button
           className={state.panelTab === 'codex' ? 'tab active' : 'tab'}
           onClick={() => dispatch({ type: 'setTab', tab: 'codex' })}
         >
@@ -100,6 +107,7 @@ function SidePanel() {
         {state.panelTab === 'character' && <CharacterBuilder />}
         {state.panelTab === 'inventory' && <InventoryPanel />}
         {state.panelTab === 'travel' && <TravelPanel />}
+        {state.panelTab === 'quests' && <QuestPanel />}
         {state.panelTab === 'codex' && <CodexPanel />}
       </div>
     </aside>
