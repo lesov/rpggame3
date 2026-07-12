@@ -4,6 +4,7 @@
  * why an action was refused. Nothing here mutates its inputs.
  */
 import { getCatalogItem } from './catalog';
+import { wouldExceedCapacity } from './encumbrance';
 import { addItem, addVosels, quantityOf, removeItem, spendVosels, voselsOf, VOSELS_ID } from './money';
 import type { Shop, StockEntry } from './shops';
 import type { PlayerCharacter } from '../player/types';
@@ -33,6 +34,7 @@ export function buyItem(player: PlayerCharacter, shop: Shop, entryIndex: number,
   if (!entry) return { player, shop, error: 'No such item.' };
   if (qty <= 0) return { player, shop, error: 'Nothing to buy.' };
   if (entry.qty < qty) return { player, shop, error: 'The vendor has no more of those.' };
+  if (wouldExceedCapacity(player, entry.itemId, qty)) return { player, shop, error: 'That would overload you.' };
   const cost = entry.price * qty;
   if (voselsOf(player) < cost) return { player, shop, error: 'You cannot afford that.' };
 

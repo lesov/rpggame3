@@ -38,12 +38,28 @@ export interface CatalogItem {
   category: ItemCategory;
   quality: ItemQuality;
   basePrice: number; // in vosels; 0 = not purchasable on its own (e.g. coin)
+  weight: number; // in pounds; counts toward carry capacity (coins are 0)
   note: string;
   weapon?: WeaponSpec;
   armor?: ArmorSpec;
   heal?: string; // dice for a healing consumable, e.g. '2d4+2'
   slot?: 'weapon' | 'armor'; // equippable slot
 }
+
+/** Default weight (lb) for any id without an explicit entry. */
+export const DEFAULT_ITEM_WEIGHT = 1;
+
+/** Weapon weight (lb) keyed by base weapon; grade variants weigh the same. */
+const WEAPON_WEIGHT: Record<string, number> = {
+  battleaxe: 4,
+  longsword: 3,
+  rapier: 2,
+  shortsword: 2,
+  spear: 3,
+  mace: 4,
+  quarterstaff: 4,
+  dagger: 1,
+};
 
 function weapon(
   id: string,
@@ -54,7 +70,17 @@ function weapon(
   bonus: number,
   note: string,
 ): CatalogItem {
-  return { id, name, category: 'weapon', quality, basePrice, note, weapon: { baseId, bonus }, slot: 'weapon' };
+  return {
+    id,
+    name,
+    category: 'weapon',
+    quality,
+    basePrice,
+    weight: WEAPON_WEIGHT[baseId] ?? 2,
+    note,
+    weapon: { baseId, bonus },
+    slot: 'weapon',
+  };
 }
 
 function armor(
@@ -64,13 +90,14 @@ function armor(
   basePrice: number,
   acBase: number,
   dexCap: number,
+  weight: number,
   note: string,
 ): CatalogItem {
-  return { id, name, category: 'armor', quality, basePrice, note, armor: { acBase, dexCap }, slot: 'armor' };
+  return { id, name, category: 'armor', quality, basePrice, weight, note, armor: { acBase, dexCap }, slot: 'armor' };
 }
 
 function potion(id: string, name: string, quality: ItemQuality, basePrice: number, heal: string, note: string): CatalogItem {
-  return { id, name, category: 'consumable', quality, basePrice, note, heal };
+  return { id, name, category: 'consumable', quality, basePrice, weight: 0.5, note, heal };
 }
 
 /**
@@ -80,7 +107,7 @@ function potion(id: string, name: string, quality: ItemQuality, basePrice: numbe
  */
 export const CATALOG: CatalogItem[] = [
   // --- Currency (never sold; here so lookups by id always resolve) ---
-  { id: 'vosels', name: 'Vosels', category: 'coin', quality: 'common', basePrice: 0, note: 'Common global currency.' },
+  { id: 'vosels', name: 'Vosels', category: 'coin', quality: 'common', basePrice: 0, weight: 0, note: 'Common global currency.' },
 
   // --- Weapons: the 8 class weapons at common, plus fine & masterwork grades ---
   weapon('battleaxe', 'Battleaxe', 'common', 20, 'battleaxe', 0, 'A serviceable footman\'s axe.'),
@@ -103,30 +130,37 @@ export const CATALOG: CatalogItem[] = [
   weapon('dagger-fine', 'Fine dagger', 'fine', 35, 'dagger', 1, 'A jeweller\'s edge — +1 to hit and damage.'),
 
   // --- Armor: worn AC = acBase + min(dexMod, dexCap) ---
-  armor('padded-armor', 'Padded armor', 'common', 6, 11, Infinity, 'Quilted cloth — AC 11 + full Dexterity.'),
-  armor('leather-armor', 'Leather armor', 'common', 12, 11, Infinity, 'Supple boiled leather — AC 11 + full Dexterity.'),
-  armor('studded-leather', 'Studded leather', 'fine', 50, 12, Infinity, 'Riveted leather — AC 12 + full Dexterity.'),
-  armor('hide-armor', 'Hide armor', 'common', 12, 12, 2, 'Thick furs and hide — AC 12 + Dexterity (max 2).'),
-  armor('chain-shirt', 'Chain shirt', 'fine', 60, 13, 2, 'A shirt of interlocking rings — AC 13 + Dexterity (max 2).'),
-  armor('scale-mail', 'Scale mail', 'fine', 55, 14, 2, 'Overlapping metal scales — AC 14 + Dexterity (max 2).'),
-  armor('breastplate', 'Breastplate', 'masterwork', 420, 14, 2, 'A fitted steel cuirass — AC 14 + Dexterity (max 2), finely made.'),
-  armor('half-plate', 'Half plate', 'masterwork', 780, 15, 2, 'Articulated plate — AC 15 + Dexterity (max 2).'),
+  armor('padded-armor', 'Padded armor', 'common', 6, 11, Infinity, 8, 'Quilted cloth — AC 11 + full Dexterity.'),
+  armor('leather-armor', 'Leather armor', 'common', 12, 11, Infinity, 10, 'Supple boiled leather — AC 11 + full Dexterity.'),
+  armor('studded-leather', 'Studded leather', 'fine', 50, 12, Infinity, 13, 'Riveted leather — AC 12 + full Dexterity.'),
+  armor('hide-armor', 'Hide armor', 'common', 12, 12, 2, 12, 'Thick furs and hide — AC 12 + Dexterity (max 2).'),
+  armor('chain-shirt', 'Chain shirt', 'fine', 60, 13, 2, 20, 'A shirt of interlocking rings — AC 13 + Dexterity (max 2).'),
+  armor('scale-mail', 'Scale mail', 'fine', 55, 14, 2, 45, 'Overlapping metal scales — AC 14 + Dexterity (max 2).'),
+  armor('breastplate', 'Breastplate', 'masterwork', 420, 14, 2, 20, 'A fitted steel cuirass — AC 14 + Dexterity (max 2), finely made.'),
+  armor('half-plate', 'Half plate', 'masterwork', 780, 15, 2, 40, 'Articulated plate — AC 15 + Dexterity (max 2).'),
 
   // --- Consumables ---
   potion('healing-potion', 'Healing potion', 'common', 50, '2d4+2', 'A red restorative draught in a wax-sealed vial.'),
   potion('greater-healing-potion', 'Greater healing potion', 'fine', 150, '4d4+4', 'A deep-crimson draught — closes even bad wounds.'),
   potion('superior-healing-potion', 'Superior healing potion', 'masterwork', 500, '8d4+8', 'A luminous elixir sold only in the great cities.'),
-  { id: 'antitoxin', name: 'Antitoxin', category: 'consumable', quality: 'common', basePrice: 50, note: 'Neutralises a poison for a time.' },
+  { id: 'antitoxin', name: 'Antitoxin', category: 'consumable', quality: 'common', basePrice: 50, weight: 0, note: 'Neutralises a poison for a time.' },
 
   // --- Gear / tools (utility, no combat math) ---
-  { id: 'provisions', name: 'Food provisions', category: 'gear', quality: 'common', basePrice: 1, note: 'A day of travel rations.' },
-  { id: 'torch', name: 'Torch', category: 'gear', quality: 'common', basePrice: 1, note: 'Burns for about an hour.' },
-  { id: 'rope', name: 'Hempen rope (50 ft)', category: 'gear', quality: 'common', basePrice: 2, note: 'Fifty feet of stout rope.' },
-  { id: 'bedroll', name: 'Bedroll', category: 'gear', quality: 'common', basePrice: 2, note: 'For nights on the road.' },
-  { id: 'tinderbox', name: 'Tinderbox', category: 'gear', quality: 'common', basePrice: 1, note: 'Flint, steel, and tinder.' },
-  { id: 'backpack-fine', name: 'Fine travelling pack', category: 'gear', quality: 'fine', basePrice: 30, note: 'A well-made pack that carries more, comfortably.' },
-  { id: 'lantern', name: 'Hooded lantern', category: 'tool', quality: 'fine', basePrice: 25, note: 'A shuttered oil lantern.' },
-  { id: 'healers-kit', name: "Healer's kit", category: 'tool', quality: 'fine', basePrice: 40, note: 'Bandages and salves — stabilises the dying.' },
+  { id: 'provisions', name: 'Food provisions', category: 'gear', quality: 'common', basePrice: 1, weight: 2, note: 'A day of travel rations.' },
+  { id: 'torch', name: 'Torch', category: 'gear', quality: 'common', basePrice: 1, weight: 1, note: 'Burns for about an hour.' },
+  { id: 'rope', name: 'Hempen rope (50 ft)', category: 'gear', quality: 'common', basePrice: 2, weight: 10, note: 'Fifty feet of stout rope.' },
+  { id: 'bedroll', name: 'Bedroll', category: 'gear', quality: 'common', basePrice: 2, weight: 7, note: 'For nights on the road.' },
+  { id: 'tinderbox', name: 'Tinderbox', category: 'gear', quality: 'common', basePrice: 1, weight: 1, note: 'Flint, steel, and tinder.' },
+  { id: 'backpack-fine', name: 'Fine travelling pack', category: 'gear', quality: 'fine', basePrice: 30, weight: 5, note: 'A well-made pack that carries more, comfortably.' },
+  { id: 'lantern', name: 'Hooded lantern', category: 'tool', quality: 'fine', basePrice: 25, weight: 2, note: 'A shuttered oil lantern.' },
+  { id: 'healers-kit', name: "Healer's kit", category: 'tool', quality: 'fine', basePrice: 40, weight: 3, note: 'Bandages and salves — stabilises the dying.' },
+
+  // --- Clothing & the wizard spellbook: not sold (basePrice 0), but weighed ---
+  { id: 'robe', name: 'Plain robe', category: 'clothing', quality: 'common', basePrice: 0, weight: 4, note: 'Coarse, travel-stained, and intentionally unmarked.' },
+  { id: 'sandals', name: 'Worn sandals', category: 'clothing', quality: 'common', basePrice: 0, weight: 0, note: 'Enough for the road, barely.' },
+  { id: 'shoes', name: 'Worn shoes', category: 'clothing', quality: 'common', basePrice: 0, weight: 1, note: 'Scuffed, serviceable, and not worth stealing.' },
+  { id: 'coat', name: 'Plain coat', category: 'clothing', quality: 'common', basePrice: 0, weight: 6, note: 'Heavy enough for cold roads, but plain and unmarked.' },
+  { id: 'spellbook', name: 'Spellbook', category: 'tool', quality: 'common', basePrice: 0, weight: 3, note: 'A compact working book for prepared spells and arcane notation.' },
 ];
 
 const BY_ID = new Map(CATALOG.map((c) => [c.id, c]));
@@ -137,6 +171,11 @@ export function getCatalogItem(id: string): CatalogItem | undefined {
 
 export function basePriceOf(id: string): number {
   return BY_ID.get(id)?.basePrice ?? 0;
+}
+
+/** Weight in pounds for an item id; a light default for unknown ids. */
+export function weightOf(id: string): number {
+  return BY_ID.get(id)?.weight ?? DEFAULT_ITEM_WEIGHT;
 }
 
 export function catalogByCategory(category: ItemCategory): CatalogItem[] {

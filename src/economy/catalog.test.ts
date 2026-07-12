@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CATALOG, catalogUpTo, getCatalogItem, qualityRank } from './catalog';
+import { CATALOG, catalogUpTo, getCatalogItem, qualityRank, weightOf, DEFAULT_ITEM_WEIGHT } from './catalog';
 import { WEAPON_STATS } from '../combat/weapons';
 
 describe('item catalog', () => {
@@ -11,6 +11,16 @@ describe('item catalog', () => {
       expect(item.name.length).toBeGreaterThan(0);
       expect(item.basePrice).toBeGreaterThanOrEqual(0);
     }
+  });
+
+  it('gives every entry a non-negative weight and weightOf falls back for unknown ids', () => {
+    for (const item of CATALOG) {
+      expect(typeof item.weight, item.id).toBe('number');
+      expect(item.weight, item.id).toBeGreaterThanOrEqual(0);
+    }
+    expect(weightOf('longsword')).toBe(getCatalogItem('longsword')!.weight);
+    expect(weightOf('vosels')).toBe(0); // coins are weightless
+    expect(weightOf('nonexistent-item')).toBe(DEFAULT_ITEM_WEIGHT);
   });
 
   it('resolves every weapon baseId in the combat weapon table', () => {

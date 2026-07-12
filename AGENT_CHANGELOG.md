@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/item-weights
+
+- Status: ready-for-review
+- Summary: Give every item a weight and cap what a character can carry. Carry capacity = 15 × Strength (lb), a hard cap — buying is refused if it would overload you (no D&D graduated-encumbrance tiers). Coins (vosels) are weightless. Heavier loads slow overland travel continuously: no effect up to a ~50% load, then walking speed falls linearly to a 0.6× floor at the cap (boat travel unaffected). Combat out of scope (hard-cap model has no speed-penalty tier). Weights live on the catalog; the few non-shop starting items (clothing, spellbook) were added to the catalog at basePrice 0 so weight resolves for everything.
+- Files changed: src/economy/catalog.ts (weight field + WEAPON_WEIGHT + clothing/spellbook entries + weightOf + DEFAULT_ITEM_WEIGHT), new src/economy/encumbrance.ts (carriedWeight, carryCapacity=15×STR, remainingCapacity, wouldExceedCapacity, loadRatio, travelSpeedFactor) + encumbrance.test.ts, src/economy/transaction.ts (buyItem capacity gate) + transaction.test.ts, src/player/travel.ts (non-boat mph × travelSpeedFactor + paceDetail "under load") + travel.test.ts, src/economy/catalog.test.ts (weights), src/ui/InventoryPanel.tsx (Load line + bar + per-item weight), src/ui/ShopScreen.tsx (weight column + disabled over-capacity Buy + load readout), src/ui/styles.css, AGENT_CHANGELOG.md.
+- Tests run: `npx vitest run` — 211 passed (26 files; +9 new across catalog/encumbrance/transaction/travel); `npx tsc --noEmit` — clean; `npm run build` — passed (pre-existing SDK/chunk warnings only).
+- UI review: pending-human-test. Dev server hot-reloading this branch at http://localhost:5175/.
+- Blockers or coordination notes: Headless browser smoke still can't run here (Chromium system libs missing); logic covered by the economy/travel unit tests, visual check left to the human. Branched from main (includes merged shopping + codex Codex panel); travel.ts change is a single localized factor on existing mph — no store/App changes. No merge to main without explicit human approval.
+
 ## 2026-07-11 - claude-fable-5 - feature/claude-fable-5/shopping
 
 - Status: approved / merged

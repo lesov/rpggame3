@@ -237,6 +237,31 @@ describe('travel planning', () => {
     expect(road.elapsedMinutes).toBeLessThan(offroad.elapsedMinutes);
   });
 
+  it('a heavy pack slows overland travel but not boat passage', () => {
+    const wd = makeTravelWorld();
+    const light = makePlayer();
+    // str 15 -> cap 225; ~200 lb of plate is a heavy but legal load.
+    const heavy: PlayerCharacter = {
+      ...light,
+      inventory: [
+        ...light.inventory,
+        { id: 'half-plate', name: 'Half plate', quantity: 5, category: 'armor' },
+      ],
+    };
+    const lightRoad = planTravel(wd, light, destination, 'offroad', false, { hour: 8, minute: 0 });
+    const heavyRoad = planTravel(wd, heavy, destination, 'offroad', false, { hour: 8, minute: 0 });
+    expect(heavyRoad.elapsedMinutes).toBeGreaterThan(lightRoad.elapsedMinutes);
+    expect(heavyRoad.paceDetail).toContain('under load');
+
+    const ports = nearbyTravelDestinations(wd, light, 200, 8);
+    const islandPort = ports.find((d) => d.boatReachable && !d.landReachable);
+    if (islandPort) {
+      const lightBoat = planTravel(wd, light, islandPort, 'boat', false, { hour: 8, minute: 0 });
+      const heavyBoat = planTravel(wd, heavy, islandPort, 'boat', false, { hour: 8, minute: 0 });
+      expect(heavyBoat.elapsedMinutes).toBe(lightBoat.elapsedMinutes);
+    }
+  });
+
   it('expands search radius to return at least two reachable destinations when possible', () => {
     const wd = makeTravelWorld();
     const destinations = nearbyTravelDestinations(wd, makePlayer(), 20, 4);
