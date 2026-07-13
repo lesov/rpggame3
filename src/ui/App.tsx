@@ -11,6 +11,7 @@ import { CombatScreen } from './CombatScreen';
 import { TravelPanel } from './TravelPanel';
 import { EncounterModal, ResumeBanner } from './EncounterModal';
 import { CodexPanel } from './CodexPanel';
+import { TradePanel } from './TradePanel';
 import { ShopScreen } from './ShopScreen';
 import { QuestPanel } from './QuestPanel';
 
@@ -100,6 +101,12 @@ function SidePanel() {
         >
           Codex
         </button>
+        <button
+          className={state.panelTab === 'trade' ? 'tab active' : 'tab'}
+          onClick={() => dispatch({ type: 'setTab', tab: 'trade' })}
+        >
+          Trade
+        </button>
       </div>
       <div className="panel-body">
         {state.panelTab === 'events' && <EventFeed />}
@@ -109,6 +116,7 @@ function SidePanel() {
         {state.panelTab === 'travel' && <TravelPanel />}
         {state.panelTab === 'quests' && <QuestPanel />}
         {state.panelTab === 'codex' && <CodexPanel />}
+        {state.panelTab === 'trade' && <TradePanel />}
       </div>
     </aside>
   );

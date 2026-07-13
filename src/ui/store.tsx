@@ -28,6 +28,7 @@ import { buyItem as buyFromShop, sellItem as sellToShop, equipItem as equipInven
 import { getMonster, defaultOpponentFor } from '../combat/monsters';
 import { buildScene } from '../combat/scene';
 import { hash } from '../sim/rng';
+import { initEconomy, worldTick, weekOf, type EconomyState } from '../trade/economy';
 import { rollTravelEncounters } from '../travel/encounter/run';
 import { initialPacing, advancePacing, resetPacing, type PacingState } from '../travel/encounter/pacing';
 import type { TravelEncounter } from '../travel/encounter/types';
@@ -66,7 +67,7 @@ export interface GameState {
   playing: boolean;
   speed: Speed;
   selection: Selection | null;
-  panelTab: 'events' | 'inspector' | 'character' | 'inventory' | 'travel' | 'quests' | 'codex';
+  panelTab: 'events' | 'inspector' | 'character' | 'inventory' | 'travel' | 'quests' | 'codex' | 'trade';
   options: RenderOptions;
   jump: JumpCommand | null;
   focus: { x: number; y: number } | null;
@@ -78,6 +79,8 @@ export interface GameState {
   travelTarget: TravelTargetPreview | null;
   selectedCodexId: string | null;
   shop: ShopSession | null;
+  /** World trade economy — market prices that move as the clock advances. */
+  economy: EconomyState;
 }
 
 /** An open shopping visit: the vendors present and which one is showing. */
@@ -197,6 +200,7 @@ export function initialState(wd: WorldData): GameState {
     travelTarget: null,
     selectedCodexId: null,
     shop: null,
+    economy: initEconomy(wd),
   };
 }
 
@@ -226,7 +230,10 @@ function advanceClock(wd: WorldData, state: GameState, minutes: number): GameSta
   const ambient = ambientEventsBetween(state.ord, newOrd, wd.ambientCtx);
   const fired = [...scripted, ...ambient].sort((a, b) => a.ord - b.ord);
   const feed = fired.length > 0 ? [...fired.reverse(), ...state.feed].slice(0, FEED_CAP) : state.feed;
-  return { ...state, ord: newOrd, date: fromOrdinal(newOrd), time: next.time, feed };
+  // Tick the world economy on week boundaries (prices move over time).
+  const targetWeek = weekOf(newOrd);
+  const economy = targetWeek > state.economy.week ? worldTick(wd, state.economy, targetWeek) : state.economy;
+  return { ...state, ord: newOrd, date: fromOrdinal(newOrd), time: next.time, feed, economy };
 }
 
 function consumeProvisions(player: PlayerCharacter, amount: number): PlayerCharacter {
