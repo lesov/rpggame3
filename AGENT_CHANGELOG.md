@@ -4,6 +4,15 @@ Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
 ## 2026-07-12 - claude-fable-5 - feature/claude-fable-5/adventurers-guild
 
+- Status: approved / merged
+- Summary: Human tested the Adventurer's Guild feature in the live UI (codex entry + biography link, Ember rank on the character sheet/inventory, Firekeepers shown at capitals, guild branch lines, and the courier quest naming the real Firekeeper) and stated their check passed, explicitly authorizing the merge ("my check passed, merge it"). Merged feature/claude-fable-5/adventurers-guild into main with a --no-ff merge commit. Push deferred to the human per their instruction; no release tag requested.
+- Files changed: AGENT_CHANGELOG.md (this entry); merge of the adventurers-guild branch (see prior entry).
+- Tests run: `npx vitest run` — 222 passed; `npx tsc --noEmit` — clean; `npm run build` — passed (as of the ready-for-review state).
+- UI review: approved-by-human (2026-07-12)
+- Blockers or coordination notes: main is merged locally but NOT pushed — the human will push manually. Do not push, re-tag, or amend main.
+
+## 2026-07-12 - claude-fable-5 - feature/claude-fable-5/adventurers-guild
+
 - Status: ready-for-review
 - Summary: Made the Adventurer's Guild a first-class organization from the canonical lore file. New codex entry "The Adventurer's Guild" (the Guild, the coal & rank ladder, halls & the Ways, the Ash Compact, the Campfire), auto-linked in the biography like the Duhi Troupe. Player biography rank changed from "Bronze" to "Ember" (file ranks Spark→Ember→Flame→Hearth→Firekeeper) plus the fired-clay coal clause; added a visible guildRank field (Ember) shown in the Character sheet and Inventory panel. Added all 32 national Firekeepers as Inspector people at their capitals (role guild_firekeeper), and a Guild branch line on capital/named-city burg cards. Rewrote the starting courier quest's target from a generic placeholder to the nation's real Firekeeper (e.g. Sio Empire → Firekeeper Talaran, Shateria → Firekeeper Timholt); the sealed-letter item note follows automatically. Spawn now prefers a named great-city-hall town when the nation has one (else any non-capital town, which the Guild keeps a post in).
 - Files changed: new src/lore/guild.ts (+ guild.test.ts); src/lore/codex.ts (+ codex.test.ts); src/player/backgrounds.ts (Ember + coal), types.ts (guildRank), character.ts (set Ember), spawn.ts (prefer city-hall towns), character.test.ts; src/data/inspect.ts (Firekeeper people); src/ui/Inspector.tsx (role label + guild branch line), CharacterBuilder.tsx + InventoryPanel.tsx (rank display); src/quests/startQuest.ts (+ startQuest.test.ts, real Firekeeper target); src/combat/fixtures.ts + src/player/travel.test.ts (guildRank field); AGENT_CHANGELOG.md.
