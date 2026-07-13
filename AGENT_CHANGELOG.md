@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-13 - claude-fable-5 - feature/claude-fable-5/trade-economy
+
+- Status: approved / merged
+- Summary: Added the world-scale trade economy core from lepasoul_trade_framework.md (v1.0). Player trading is NOT included (unlocks later with caravans) — this increment builds the living economy: a 24-good catalog (staple/commodity/luxury/special), per-province production derived from biome/state-type/culture/mine-markers, tier-gated demand per market class, a burg route graph (snapped from route polylines, road/trail/sea capacities), and a stateful MarketState per settlement with a weekly tick in §8 order (events → production → NPC diffusion → prices → clamps). Prices are seeded to a settled equilibrium at the 1181 start date (half-year settle) so day-one regional spreads exist, and move as the clock advances (weekly, with bounded catch-up for big jumps). History coupling: war economies (reusing wd.wars) raise iron/grain and depress luxuries in belligerent states with post-peace decay, plus two campaign-bible anchors (1234 Mathathremo → dwarf-steel supply collapse; 1258 sack of Zinulb → relic glut for 5y). Prices clamped to [0.4,3.0]×base, deterministic seeded noise. New read-only Trade tab: prices at a chosen market (vs base / vs last week), this week's movers, widest regional spreads, and a "you cannot trade yet — caravans unlock later" note.
+- Files changed: AGENT_CHANGELOG.md; new src/trade/{goods,markets,graph,production,demand,pricing,events,flow,economy}.ts + src/trade/{graph,production,economy}.test.ts; new src/ui/TradePanel.tsx; src/ui/store.tsx (economy slice + weekly tick in advanceClock), src/ui/App.tsx (Trade tab), src/ui/styles.css.
+- Tests run: `npx vitest run` — 246 passed (31 files; +21 new trade tests); `npx tsc --noEmit` — clean; `npm run build` — passed (existing Anthropic SDK browser-externalization + chunk-size warnings only).
+- UI review: approved-by-human (2026-07-13) — human tested the Trade tab in the live UI and stated their check passed, explicitly authorizing the merge ("my check passed, merge it"). Merged into main with a --no-ff merge commit.
+- Blockers or coordination notes: Branched from main 222b694. Additive — new src/trade/ module + store economy slice + Trade tab; shared touch-points store.tsx/App.tsx/styles.css added alongside codex's tabs (no change to combat, quests, shopping, or the guild layer). Deferred to the caravan milestone: transport (caravans/ships/portals), shipment quote/execute, insurance, player buy/sell of trade goods, rumor staleness, full campaign-bible event table. main is merged locally but NOT pushed — the human will push manually.
+
 ## 2026-07-12 21:59 CDT - codex - feature/codex/quest-progress-delivery
 
 - Status: approved
