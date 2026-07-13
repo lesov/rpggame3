@@ -4,6 +4,7 @@ import { inspectPlace, findNearby, peopleFor, activeWars } from '../data/inspect
 import { weatherAt, type Weather } from '../sim/weather';
 import { addDays, season, MONTH_NAMES } from '../sim/calendar';
 import type { Burg, Person, SettlementBuilding } from '../data/types';
+import { CITY_HALL_BURGS, GUILD_BRANCH_LABEL, type GuildBranch } from '../lore/guild';
 
 const CONDITION_ICON: Record<string, string> = {
   Clear: '☀️', 'Partly cloudy': '⛅', Overcast: '☁️', Fog: '🌫️',
@@ -41,7 +42,11 @@ function buildingLabel(b: SettlementBuilding): string {
 
 function PersonCard({ p }: { p: Person }) {
   const [open, setOpen] = useState(false);
-  const roleLabel = p.role === 'state_ruler' ? 'Ruler' : p.role === 'military_leader' ? 'Warlord' : 'Head of faith';
+  const roleLabel =
+    p.role === 'state_ruler' ? 'Ruler'
+    : p.role === 'military_leader' ? 'Warlord'
+    : p.role === 'guild_firekeeper' ? "Adventurers' Guild"
+    : 'Head of faith';
   return (
     <div className={`person-card${open ? ' open' : ''}`} onClick={() => setOpen(!open)}>
       <div className="person-head">
@@ -61,11 +66,13 @@ function BurgCard({ burg }: { burg: Burg }) {
     burg.citadel && 'citadel',
     burg.shanty && 'shanty town',
   ].filter(Boolean).join(' · ');
+  const guildBranch: GuildBranch | undefined = burg.capital ? 'capital-hall' : CITY_HALL_BURGS.has(burg.name) ? 'city-hall' : undefined;
   return (
     <div className="section">
       <h3>🏰 {burg.name}</h3>
       <div className="kv"><span>Size</span><span>{burg.tier ?? burg.group} — {burg.population.toLocaleString()} souls</span></div>
       {flags && <div className="kv"><span>Status</span><span>{flags}</span></div>}
+      {guildBranch && <div className="kv"><span>Guild</span><span>Adventurers' Guild — {GUILD_BRANCH_LABEL[guildBranch]}</span></div>}
       {burg.religion && <div className="kv"><span>Faith</span><span>{burg.religion}</span></div>}
       {burg.landmarks.palace && (
         <div className="kv"><span>Seat</span><span>{burg.landmarks.palace.name} ({burg.landmarks.palace.kind}) — {burg.landmarks.palace.seatOf}</span></div>

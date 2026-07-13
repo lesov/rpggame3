@@ -67,6 +67,7 @@ function CharacterSheet({ player }: { player: PlayerCharacter }) {
         <h3>{player.name}</h3>
         <div className="kv"><span>Level</span><span>1 {player.speciesName} {player.className}</span></div>
         <div className="kv"><span>Origin</span><span>{player.backgroundName} · {player.nationalityName}</span></div>
+        <div className="kv"><span>Guild rank</span><span>{player.guildRank} · Adventurers' Guild</span></div>
         <div className="kv"><span>Faith</span><span>{player.religionName}</span></div>
         <div className="kv"><span>Start</span><span>{player.location.placeName}</span></div>
       </div>

@@ -1,5 +1,6 @@
 import type { Burg, Cell, Religion, State } from '../data/types';
 import type { WorldData } from '../data/worldLoader';
+import { CITY_HALL_BURGS } from '../lore/guild';
 import type { PlayerLocation } from './types';
 
 export interface SpawnWorld {
@@ -44,9 +45,14 @@ export function chooseStartingLocation(
 
   const seed = hashText(`${state.i}|${religionId}|${characterName}`);
   const inNation = wd.world.burgs.filter((b) => b.state === state.i && !b.capital);
+  // Prefer a town that holds a named Adventurers' Guild city hall, so the
+  // start city has a real branch; otherwise any non-capital town (the Guild
+  // keeps a town post in most market towns).
+  const cityHalls = inNation.filter((b) => CITY_HALL_BURGS.has(b.name));
   const anyNonCapital = wd.world.burgs.filter((b) => !b.capital);
   const anyBurg = wd.world.burgs;
-  const pool = inNation.length > 0 ? inNation : anyNonCapital.length > 0 ? anyNonCapital : anyBurg;
+  const pool =
+    cityHalls.length > 0 ? cityHalls : inNation.length > 0 ? inNation : anyNonCapital.length > 0 ? anyNonCapital : anyBurg;
 
   if (pool.length > 0) {
     const ranked = pool

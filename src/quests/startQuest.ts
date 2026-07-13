@@ -2,13 +2,13 @@ import type { Burg } from '../data/types';
 import type { WorldData } from '../data/worldLoader';
 import type { GameDate } from '../sim/calendar';
 import type { PlayerLocation } from '../player/types';
+import { firekeeperForState } from '../lore/guild';
 import type { Quest } from './types';
 
 export const SEALED_GUILD_LETTER_ID = 'sealed-guild-letter';
 
 const GIVEN_NAMES = ['Marrek', 'Ilyra', 'Tovan', 'Sahra', 'Belisar', 'Nym', 'Odran', 'Veyra'];
 const FAMILY_NAMES = ['Ashgate', 'Kerron', 'Duskvale', 'Mornfell', 'Sableford', 'Greywine', 'Cindermark', 'Harth'];
-const CAPITAL_LEADER_NAMES = ['Ser Caldrin Voss', 'Mistress Eliane Thorne', 'Warden Jarek Omber', 'Archivist Maela Kint'];
 
 function hashText(text: string): number {
   let h = 2166136261;
@@ -24,8 +24,10 @@ function guildHeadName(origin: PlayerLocation, characterName: string): string {
   return `${GIVEN_NAMES[seed % GIVEN_NAMES.length]} ${FAMILY_NAMES[Math.floor(seed / GIVEN_NAMES.length) % FAMILY_NAMES.length]}`;
 }
 
-function capitalLeaderName(stateId: number): string {
-  return CAPITAL_LEADER_NAMES[stateId % CAPITAL_LEADER_NAMES.length];
+/** The real national Firekeeper for the destination nation (from the lore). */
+function firekeeperNameFor(wd: WorldData, stateId: number): string {
+  const state = wd.stateById.get(stateId);
+  return (state && firekeeperForState(state)?.name) ?? 'the Firekeeper';
 }
 
 function burgLocation(wd: WorldData, burg: Burg, reason: string): PlayerLocation {
@@ -45,25 +47,25 @@ export function startingQuestDestination(wd: WorldData, origin: PlayerLocation, 
   const state = wd.stateById.get(nationalityId);
   const capital = state ? wd.burgById.get(state.capital) : undefined;
   if (capital && capital.cell !== origin.cellId) {
-    return burgLocation(wd, capital, `National capital and regional Adventurers' Guild seat.`);
+    return burgLocation(wd, capital, `The nation's capital hall — the Firekeeper's seat.`);
   }
 
   const fallback = wd.world.burgs
     .filter((burg) => burg.state === nationalityId && burg.cell !== origin.cellId)
     .sort((a, b) => b.population - a.population)[0];
-  if (fallback) return burgLocation(wd, fallback, `Nearest available regional Adventurers' Guild seat.`);
+  if (fallback) return burgLocation(wd, fallback, `Nearest Adventurers' Guild hall holding the Firekeeper.`);
 
   return {
     ...origin,
-    reason: `Local Adventurers' Guild hall; the regional leader is temporarily in the same city.`,
+    reason: `The local Adventurers' Guild hall; the Firekeeper is in the same city.`,
   };
 }
 
 export function createStartingQuest(wd: WorldData, origin: PlayerLocation, characterName: string, nationalityId: number, startedAt: GameDate): Quest {
   const destination = startingQuestDestination(wd, origin, nationalityId);
   const giverName = guildHeadName(origin, characterName);
-  const targetName = capitalLeaderName(destination.stateId);
-  const targetRole = `Regional leader of the Adventurers' Guild`;
+  const targetName = firekeeperNameFor(wd, destination.stateId);
+  const targetRole = `national head of the Adventurers' Guild`;
   const capitalRoute = destination.cellId === origin.cellId ? 'the local guildhall' : `${destination.placeName}, ${destination.stateName}`;
 
   return {

@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-12 - claude-fable-5 - feature/claude-fable-5/adventurers-guild
+
+- Status: ready-for-review
+- Summary: Made the Adventurer's Guild a first-class organization from the canonical lore file. New codex entry "The Adventurer's Guild" (the Guild, the coal & rank ladder, halls & the Ways, the Ash Compact, the Campfire), auto-linked in the biography like the Duhi Troupe. Player biography rank changed from "Bronze" to "Ember" (file ranks Spark→Ember→Flame→Hearth→Firekeeper) plus the fired-clay coal clause; added a visible guildRank field (Ember) shown in the Character sheet and Inventory panel. Added all 32 national Firekeepers as Inspector people at their capitals (role guild_firekeeper), and a Guild branch line on capital/named-city burg cards. Rewrote the starting courier quest's target from a generic placeholder to the nation's real Firekeeper (e.g. Sio Empire → Firekeeper Talaran, Shateria → Firekeeper Timholt); the sealed-letter item note follows automatically. Spawn now prefers a named great-city-hall town when the nation has one (else any non-capital town, which the Guild keeps a post in).
+- Files changed: new src/lore/guild.ts (+ guild.test.ts); src/lore/codex.ts (+ codex.test.ts); src/player/backgrounds.ts (Ember + coal), types.ts (guildRank), character.ts (set Ember), spawn.ts (prefer city-hall towns), character.test.ts; src/data/inspect.ts (Firekeeper people); src/ui/Inspector.tsx (role label + guild branch line), CharacterBuilder.tsx + InventoryPanel.tsx (rank display); src/quests/startQuest.ts (+ startQuest.test.ts, real Firekeeper target); src/combat/fixtures.ts + src/player/travel.test.ts (guildRank field); AGENT_CHANGELOG.md.
+- Tests run: `npx vitest run` — 222 passed (28 files; +8 across guild/codex/character/quest); `npx tsc --noEmit` — clean; `npm run build` — passed (pre-existing SDK/chunk warnings only).
+- UI review: pending-human-test. Dev server hot-reloading this branch.
+- Blockers or coordination notes: Headless browser smoke still blocked here (Chromium libs missing); logic covered by guild/codex/quest/character unit tests, visual check left to the human (Codex tab entry + biography link; Character sheet Ember; Inspecting a capital shows its Firekeeper; quest names the real Firekeeper). Branched from main a92fd05; shares codex-authored files (startQuest.ts, player/types+character, CharacterBuilder, fixtures, travel.test) — edits additive, quest structure and Quests tab unchanged. No merge to main without explicit human approval.
+
 ## 2026-07-12 15:26 CDT - codex - feature/codex/starting-quest
 
 - Status: approved

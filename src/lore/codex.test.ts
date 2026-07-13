@@ -19,6 +19,15 @@ describe('codex registry', () => {
     ]);
   });
 
+  it('looks up the Adventurer\'s Guild and links it from biography text', () => {
+    expect(getCodexEntry('adventurers-guild')?.title).toBe("The Adventurer's Guild");
+    expect(findCodexEntryByAlias("Adventurers' Guild")?.id).toBe('adventurers-guild');
+    const tokens = tokenizeCodexLinks("he enlisted in the local Adventurers' Guild.");
+    const link = tokens.find((t) => t.kind === 'link');
+    expect(link?.entryId).toBe('adventurers-guild');
+    expect(link?.text).toBe("Adventurers' Guild");
+  });
+
   it('leaves unrelated words untouched', () => {
     expect(tokenizeCodexLinks('Duhilar is not the order.')).toEqual([
       { kind: 'text', text: 'Duhilar is not the order.' },

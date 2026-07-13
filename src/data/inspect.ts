@@ -5,6 +5,7 @@
 import type { WorldData } from './worldLoader';
 import { elevationFt, depthFt, formatLatLon } from './worldLoader';
 import type { Burg, Person, State, Zone, Marker, Regiment, River } from './types';
+import { guildLeaderPeople } from '../lore/guild';
 
 export interface PlaceInfo {
   cellId: number;
@@ -229,14 +230,18 @@ export function findNearby(wd: WorldData, x: number, y: number, radiusMi = 75, l
   return items.slice(0, limit);
 }
 
-/** People records relevant to a state (ruler, warlord) and faith (head). */
+/** People records relevant to a state (ruler, warlord, guild Firekeeper) and faith. */
 export function peopleFor(wd: WorldData, stateId?: number, religionName?: string): Person[] {
   const out: Person[] = [];
   for (const p of wd.world.people) {
     if (stateId !== undefined && p.stateId === stateId) out.push(p);
     else if (religionName && p.religionName === religionName) out.push(p);
   }
-  const order: Record<string, number> = { state_ruler: 0, military_leader: 1, religious_leader: 2 };
+  if (stateId !== undefined) {
+    const state = wd.stateById.get(stateId);
+    if (state) out.push(...guildLeaderPeople(state));
+  }
+  const order: Record<string, number> = { state_ruler: 0, military_leader: 1, religious_leader: 2, guild_firekeeper: 3 };
   out.sort((a, b) => (order[a.role] ?? 9) - (order[b.role] ?? 9));
   return out;
 }

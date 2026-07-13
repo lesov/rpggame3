@@ -120,6 +120,7 @@ export function buildPlayerCharacter(
     backgroundName: background.name,
     backstoryId: backstory.id,
     backstoryTitle: backstory.title,
+    guildRank: 'Ember',
     nationalityId: state.i,
     nationalityName: state.fullName ?? state.name,
     religionId: religion.i,

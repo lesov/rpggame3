@@ -255,6 +255,14 @@ describe('player character creation', () => {
     expect(he.story).not.toMatch(/\bthey\b/);
   });
 
+  it('starts every character at Ember rank in the Adventurers\' Guild', () => {
+    const pc = buildPlayerCharacter(validInput(), makeWorld(), START_DATE);
+    expect(pc.guildRank).toBe('Ember');
+    expect(pc.story).toContain('Ember');
+    expect(pc.story).not.toContain('Bronze');
+    expect(pc.story).toContain("Adventurers' Guild");
+  });
+
   it('keeps pregenerated characters buildable', () => {
     const wd = makeWorld();
     const remapped = PREGENERATED_CHARACTERS.map((pregen) => ({

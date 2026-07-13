@@ -12,7 +12,7 @@ For years, [Name] excelled, surviving the grueling trials and advancing seamless
 
 Then came the shattering verdict. Without warning, the masters declared that [Name] lacked the final, intangible spark required to truly graduate. Deemed an incomplete project, [he/she] was abruptly severed from the only home [he/she] had ever known and cast out into the sprawling, chaotic streets of [City]—entirely on [his/her] own for the first time in [his/her] life.
 
-Stranded in a world without structure, [Name] quickly learned that the "incomplete" training of the Duhi Troupe was still far superior to anything the civilian world had to offer. To secure food and shelter, [he/she] enlisted in the local Adventurers' Guild. What the masters saw as a failure, the guild saw as an elite asset. Over the last three years, [Name] has navigated the cutthroat world of freelance contracting, relying on [his/her] lethal foundations to rise to the Bronze rank.
+Stranded in a world without structure, [Name] quickly learned that the "incomplete" training of the Duhi Troupe was still far superior to anything the civilian world had to offer. To secure food and shelter, [he/she] enlisted in the local Adventurers' Guild. What the masters saw as a failure, the guild saw as an elite asset. Over the last three years, [Name] has navigated the cutthroat world of freelance contracting, relying on [his/her] lethal foundations to earn the fired-clay coal of a sworn adventurer and rise to the rank of Ember.
 
 Though the masters of the Duhi Troupe discarded [him/her], [Name] is proving on the streets of [City] that a weapon doesn't need a certificate of completion to draw blood.`;
 

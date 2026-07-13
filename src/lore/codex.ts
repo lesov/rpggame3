@@ -26,6 +26,20 @@ export const CODEX_ENTRIES: CodexEntry[] = [
       'Once a year the troupe judges its own. Those who show the gift are kept and pushed harder; those who do not are quietly resettled in the cities, handed a trade and a plausible past, never knowing what they were spared or denied. Thousands live this way at any given moment. Almost none reach the end of it — of all the children who enter, only a handful survive the winnowing to graduate at twenty, and those few belong to the Duhi for the rest of their lives.',
     ],
   },
+  {
+    id: 'adventurers-guild',
+    title: "The Adventurer's Guild",
+    subtitle: 'Independent order · warriors, mages, and thieves · thirty-two national halls',
+    tags: ['Guild', 'Independent order', 'The Ways', 'Lepasoul-wide'],
+    aliases: ["Adventurers' Guild", "Adventurer's Guild", "the Adventurer's Guild", 'the Guild', 'Campfire', 'Firekeeper'],
+    body: [
+      "Ask a farmer what the Guild is and she will say: the people you hire when the thing in the well starts answering back. Ask a king and he will say, through his teeth: the only army in my realm that I do not command. Both are correct. The Adventurer's Guild is the oldest institution in the world that belongs to no crown and no church — warriors' lodge, mages' circle, and thieves' den under one roof. It does not ask what you were, only what you can do and whether you will swear. Thirty-two national guilds keep halls in every realm, and each answers not to its sovereign but to its own Firekeeper, and through them to the Campfire.",
+      "Every sworn adventurer carries a coal — a medallion of fired clay bound in iron, struck at the hall where the oath was taken. To carry the coal is to be Guild; to have it broken before the hearth is to be cast out, and no hall in the world will shelter a broken coal. Rank is marked by fire: a Spark is newly sworn, running messages and clearing cellars; an Ember is proven in the field, taking contracts alone; a Flame is a veteran who may open a town post and train Sparks; a Hearth is a master, rarely more than two or three in a nation; and a Firekeeper heads a national guild and holds one of the thirty-two seats at the Campfire. Fewer than a thousand coals burn in all the world.",
+      "The Guild keeps three kinds of house — a capital hall in each realm's first city, city halls in every city of consequence, and humble town posts above tavern common-rooms in perhaps half the market towns of the world; 164 doors in all bear the coal-and-flame. Its true wealth, and the reason crowns tolerate its independence, is the Ways: thirty-five teleport portals it anchors in the great cities, whose fees fund the halls and buy the Guild the only thing it wants from any throne — to be left alone.",
+      "The Guild's charter with the crowns is the Ash Compact: we abide the law of the land we stand in, we pay the tithe of the tenth on all contract-gold, and we draw no blade in any war of crowns. That last clause is its living heart. When realms go to war the Guild goes neutral — its coals escort refugees and hunt the monsters that follow armies like gulls follow ships, but they do not take the field. A coal who soldiers is a coal broken; the coal serves the road, not the banner.",
+      "Above the national guilds sits no palace, only a fire. The Campfire is the council of all Firekeepers, meeting where the Speaker keeps their hall. By unbroken custom the Speaker is chosen from a lesser hall, never from the guilds of the great powers, so that no crown may claim the fire burns in its colors. The Campfire fixes the tithe, blesses new portals, and — its gravest power — may declare the Dousing, the closure of all halls and Ways in a realm whose crown has broken the Compact. It has been declared four times; no realm has endured it longer than three years.",
+    ],
+  },
 ];
 
 const ENTRY_BY_ID = new Map(CODEX_ENTRIES.map((entry) => [entry.id, entry]));

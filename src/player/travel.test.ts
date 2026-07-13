@@ -165,6 +165,7 @@ function makePlayer(provisions = 5): PlayerCharacter {
     backgroundName: 'Soldier',
     backstoryId: 'duhi_washout',
     backstoryTitle: 'Duhi Troupe Washout',
+    guildRank: 'Ember',
     nationalityId: 1,
     nationalityName: 'Test State',
     religionId: 1,
