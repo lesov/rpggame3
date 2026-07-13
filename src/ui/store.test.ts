@@ -59,6 +59,42 @@ describe('game clock state', () => {
     expect(next.selectedCodexId).toBe('duhi-troupe');
   });
 
+  it('advances the starting courier quest at the capital and grants the response letter after two hours', () => {
+    const reducer = makeReducer(wd);
+    const pc = makeTestCharacter('fighter');
+    const quest = pc.quests[0];
+    const originPlayer = {
+      ...pc,
+      inventory: [
+        ...pc.inventory,
+        { id: 'sealed-guild-letter', name: 'Sealed guild letter', quantity: 1, category: 'quest' as const },
+      ],
+    };
+    let s = reducer(initialState(wd), { type: 'setPlayer', player: originPlayer });
+
+    const blocked = reducer(s, { type: 'deliverQuestLetter', questId: quest.id });
+    expect(blocked.player?.quests[0].phase).toBe('deliver-letter');
+    expect(blocked.player?.inventory.some((item) => item.id === 'sealed-guild-letter')).toBe(true);
+
+    const atCapital = {
+      ...originPlayer,
+      location: quest.destination,
+    };
+    s = reducer(initialState(wd), { type: 'setPlayer', player: atCapital });
+    s = reducer(s, { type: 'deliverQuestLetter', questId: quest.id });
+    expect(s.player?.quests[0].phase).toBe('wait-for-response');
+    expect(s.player?.quests[0].steps.map((step) => step.status)).toEqual(['completed', 'active', 'pending']);
+    expect(s.player?.inventory.some((item) => item.id === 'sealed-guild-letter')).toBe(false);
+    expect(s.player?.quests[0].responseReadyAt?.time).toEqual({ hour: 10, minute: 0 });
+
+    s = reducer(s, { type: 'waitForQuestResponse', questId: quest.id });
+    expect(s.time).toEqual({ hour: 10, minute: 0 });
+    expect(s.player?.quests[0].phase).toBe('return-response');
+    expect(s.player?.quests[0].steps.map((step) => step.status)).toEqual(['completed', 'completed', 'active']);
+    expect(s.player?.quests[0].responseReadyAt).toBeUndefined();
+    expect(s.player?.inventory.find((item) => item.id === 'guild-response-letter')?.note).toContain(quest.origin.placeName);
+  });
+
   it('commits travel by advancing time, moving the player, and consuming provisions', () => {
     const reducer = makeReducer(wd);
     const origin = wd.world.burgs[0];

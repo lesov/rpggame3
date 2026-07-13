@@ -31,6 +31,7 @@ import { hash } from '../sim/rng';
 import { rollTravelEncounters } from '../travel/encounter/run';
 import { initialPacing, advancePacing, resetPacing, type PacingState } from '../travel/encounter/pacing';
 import type { TravelEncounter } from '../travel/encounter/types';
+import { deliverCourierLetter, receiveCourierResponse, responseWaitRemainingMinutes } from '../quests/progression';
 
 export type Speed = 'hour' | 'day' | 'week';
 export const SPEED_MINUTES: Record<Speed, number> = { hour: 60, day: MINUTES_PER_DAY, week: 7 * MINUTES_PER_DAY };
@@ -110,6 +111,8 @@ export type GameAction =
   | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number }
   | { type: 'setPlayer'; player: PlayerCharacter }
   | { type: 'setTravelTarget'; target: TravelTargetPreview | null }
+  | { type: 'deliverQuestLetter'; questId: string }
+  | { type: 'waitForQuestResponse'; questId: string }
   | { type: 'travel'; plan: TravelPlan }
   | { type: 'resumeTravel' }
   | { type: 'attackEncounter' }
@@ -384,6 +387,22 @@ export function makeReducer(wd: WorldData) {
           return state;
         }
         return { ...state, travelTarget: next };
+      }
+      case 'deliverQuestLetter': {
+        if (!state.player) return state;
+        const player = deliverCourierLetter(state.player, action.questId, state.date, state.time);
+        if (player === state.player) return state;
+        return { ...state, player, panelTab: 'quests' };
+      }
+      case 'waitForQuestResponse': {
+        if (!state.player) return state;
+        const quest = state.player.quests.find((q) => q.id === action.questId);
+        if (!quest) return state;
+        const minutes = responseWaitRemainingMinutes(quest, state.date, state.time);
+        const advanced = minutes > 0 ? advanceClock(wd, state, minutes) : state;
+        const player = receiveCourierResponse(advanced.player ?? state.player, action.questId);
+        if (player === (advanced.player ?? state.player)) return advanced;
+        return { ...advanced, player, panelTab: 'quests' };
       }
       case 'travel': {
         if (!state.player) return state;

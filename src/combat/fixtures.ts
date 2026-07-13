@@ -47,6 +47,7 @@ export function makeTestCharacter(classId: CharacterClassId = 'fighter'): Player
         id: 'guild-sealed-letter',
         title: 'Sealed Orders for the Capital',
         status: 'active',
+        phase: 'deliver-letter',
         giverName: 'Test Guildmaster',
         giverRole: "Head of the Adventurers' Guild",
         origin: {

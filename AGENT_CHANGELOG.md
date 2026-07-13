@@ -2,6 +2,24 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-12 21:59 CDT - codex - feature/codex/quest-progress-delivery
+
+- Status: approved
+- Summary: Human tested the capital courier quest progression in the live UI and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npm test` — 225 passed; `npm run build` — passed as of the ready-for-review state.
+- UI review: approved-by-human (2026-07-12)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-12 21:38 CDT - codex - feature/codex/quest-progress-delivery
+
+- Status: ready-for-review
+- Summary: Added first courier quest progression: arriving at the capital shows a Firekeeper representative dialogue, delivering the sealed letter removes it and starts a two-hour response wait, the wait button advances the game clock and grants a sealed response letter, and the active objective changes to returning to the origin guild head.
+- Files changed: AGENT_CHANGELOG.md, src/quests/types.ts, src/quests/startQuest.ts, src/quests/progression.ts, src/quests/startQuest.test.ts, src/economy/catalog.ts, src/economy/catalog.test.ts, src/combat/fixtures.ts, src/ui/store.tsx, src/ui/store.test.ts, src/ui/QuestPanel.tsx, src/ui/styles.css
+- Tests run: `npm test` — 225 passed; `npm run build` — passed (existing Anthropic SDK browser-externalization warnings and chunk-size warning only).
+- UI review: pending-human-test
+- Blockers or coordination notes: Dev server running at http://localhost:5176/ for human UI review. HTTP check returned 200 OK. Leaving untracked source-world files untouched.
+
 ## 2026-07-12 21:06 CDT - codex - feature/codex/travel-target-highlight
 
 - Status: approved

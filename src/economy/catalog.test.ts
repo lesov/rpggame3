@@ -50,6 +50,7 @@ describe('item catalog', () => {
     expect(common.some((c) => c.id === 'greater-healing-potion')).toBe(false);
     expect(common.some((c) => c.id === 'vosels')).toBe(false);
     expect(common.some((c) => c.id === 'sealed-guild-letter')).toBe(false);
+    expect(common.some((c) => c.id === 'guild-response-letter')).toBe(false);
 
     const all = catalogUpTo('masterwork', ['consumable']);
     expect(all.some((c) => c.id === 'superior-healing-potion')).toBe(true);
@@ -58,6 +59,13 @@ describe('item catalog', () => {
 
   it('keeps the sealed guild letter as a weightless quest item', () => {
     const letter = getCatalogItem('sealed-guild-letter')!;
+    expect(letter.category).toBe('quest');
+    expect(letter.basePrice).toBe(0);
+    expect(letter.weight).toBe(0);
+  });
+
+  it('keeps the guild response letter as a weightless quest item', () => {
+    const letter = getCatalogItem('guild-response-letter')!;
     expect(letter.category).toBe('quest');
     expect(letter.basePrice).toBe(0);
     expect(letter.weight).toBe(0);
