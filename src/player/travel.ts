@@ -42,6 +42,14 @@ export interface TravelPlan {
   summary: string;
 }
 
+export function defaultTravelModeFor(destination: TravelDestination, roadAvailable: boolean): TravelMode {
+  if (destination.boatReachable && !destination.landReachable) return 'boat';
+  if (destination.landReachable && roadAvailable) return 'road';
+  if (destination.landReachable) return 'offroad';
+  if (destination.boatReachable) return 'boat';
+  return 'offroad';
+}
+
 const ROAD_ACCESS_MI = 20;
 const ROAD_MPH = 3.2;
 const TRAIL_MPH = 2.7;

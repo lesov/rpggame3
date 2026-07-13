@@ -4,6 +4,7 @@ import path from 'node:path';
 import { buildWorldData, type WorldData } from '../data/worldLoader';
 import type { PlayerCharacter } from './types';
 import {
+  defaultTravelModeFor,
   elapsedMinutesForTravel,
   offroadBiomeMultiplier,
   planTravel,
@@ -210,6 +211,13 @@ describe('travel planning', () => {
     const wd = makeTravelWorld();
     expect(roadRouteFor(wd, { x: 0, y: 0 }, { x: 100, y: 0 })?.group).toBe('roads');
     expect(roadRouteFor(wd, { x: 0, y: 15 }, { x: 100, y: 30 })).toBeNull();
+  });
+
+  it('defaults a newly selected destination to the best available travel mode', () => {
+    expect(defaultTravelModeFor(destination, true)).toBe('road');
+    expect(defaultTravelModeFor(destination, false)).toBe('offroad');
+    expect(defaultTravelModeFor({ ...destination, landReachable: false, boatReachable: true }, false)).toBe('boat');
+    expect(defaultTravelModeFor({ ...destination, landReachable: true, boatReachable: true }, true)).toBe('road');
   });
 
   it('applies higher off-road cost for difficult biomes', () => {

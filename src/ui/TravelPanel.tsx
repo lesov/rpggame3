@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatDate, formatTime24 } from '../sim/calendar';
-import { nearbyTravelDestinations, planTravel, roadRouteFor, type TravelMode } from '../player/travel';
+import { defaultTravelModeFor, nearbyTravelDestinations, planTravel, roadRouteFor, type TravelMode } from '../player/travel';
 import { legDangerBreakdown } from '../travel/encounter/run';
 import { useGame } from './store';
 
@@ -50,15 +50,35 @@ export function TravelPanel() {
   }, [wd, player, selected]);
 
   useEffect(() => {
-    if (selected?.boatReachable && !selected.landReachable) {
-      if (mode !== 'boat') setMode('boat');
+    if (!selected) {
+      dispatch({ type: 'setTravelTarget', target: null });
       return;
     }
-    if (selected?.landReachable && mode === 'boat') {
-      setMode(roadAvailable ? 'road' : 'offroad');
-      return;
-    }
-    if (!roadAvailable && mode === 'road') setMode('offroad');
+    dispatch({
+      type: 'setTravelTarget',
+      target: {
+        id: selected.id,
+        name: selected.name,
+        kind: selected.kind,
+        x: selected.x,
+        y: selected.y,
+        cellId: selected.cellId,
+      },
+    });
+  }, [dispatch, selected?.id, selected?.name, selected?.kind, selected?.x, selected?.y, selected?.cellId]);
+
+  useEffect(() => {
+    if (!selected) return;
+    setMode(defaultTravelModeFor(selected, roadAvailable));
+  }, [selected?.id, roadAvailable]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const valid =
+      (mode === 'road' && roadAvailable && selected.landReachable) ||
+      (mode === 'offroad' && selected.landReachable) ||
+      (mode === 'boat' && selected.boatReachable);
+    if (!valid) setMode(defaultTravelModeFor(selected, roadAvailable));
   }, [roadAvailable, mode, selected]);
 
   const plan = useMemo(() => {
@@ -81,6 +101,12 @@ export function TravelPanel() {
 
   if (!player) return <div className="inspector-empty">Create or choose a character before traveling.</div>;
 
+  const chooseDestination = (dest: typeof destinations[number]) => {
+    setSelectedId(dest.id);
+    const hasRoad = Boolean(roadRouteFor(wd, player.location, dest));
+    setMode(defaultTravelModeFor(dest, hasRoad));
+  };
+
   return (
     <div className="travel-panel">
       <div className="section">
@@ -98,7 +124,7 @@ export function TravelPanel() {
             <button
               key={dest.id}
               className={selected?.id === dest.id ? 'travel-destination active' : 'travel-destination'}
-              onClick={() => setSelectedId(dest.id)}
+              onClick={() => chooseDestination(dest)}
             >
               <span>{dest.icon ?? '•'}</span>
               <strong>{dest.name}</strong>

@@ -23,6 +23,7 @@ export interface RenderOptions {
 export interface RenderExtras {
   selection?: { x: number; y: number; cellId: number };
   focus?: { x: number; y: number };
+  travelTarget?: { x: number; y: number; name: string; kind: 'burg' | 'marker' };
   player?: { x: number; y: number; name: string };
 }
 
@@ -275,6 +276,39 @@ export class MapRenderer {
       ctx.arc(sx, sy, 2.2, 0, Math.PI * 2);
       ctx.fillStyle = '#f2c14e';
       ctx.fill();
+    }
+
+    // Travel target marker
+    if (extras.travelTarget) {
+      const [sx, sy] = this.toScreen(view, extras.travelTarget.x, extras.travelTarget.y);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(sx, sy, 13, 0, Math.PI * 2);
+      ctx.strokeStyle = '#5a9bd4';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.arc(sx, sy, 18, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(90, 155, 212, 0.75)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#5a9bd4';
+      ctx.fill();
+      if (view.k >= 1.4) {
+        ctx.textAlign = 'center';
+        ctx.font = "700 12px 'Segoe UI', sans-serif";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(12, 10, 8, 0.88)';
+        ctx.fillStyle = '#c6e2ff';
+        const label = `Travel: ${extras.travelTarget.name}`;
+        ctx.strokeText(label, sx, sy + 29);
+        ctx.fillText(label, sx, sy + 29);
+      }
+      ctx.restore();
     }
 
     // Player marker
