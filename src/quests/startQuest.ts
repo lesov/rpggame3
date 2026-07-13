@@ -6,6 +6,7 @@ import { firekeeperForState } from '../lore/guild';
 import type { Quest } from './types';
 
 export const SEALED_GUILD_LETTER_ID = 'sealed-guild-letter';
+export const GUILD_RESPONSE_LETTER_ID = 'guild-response-letter';
 
 const GIVEN_NAMES = ['Marrek', 'Ilyra', 'Tovan', 'Sahra', 'Belisar', 'Nym', 'Odran', 'Veyra'];
 const FAMILY_NAMES = ['Ashgate', 'Kerron', 'Duskvale', 'Mornfell', 'Sableford', 'Greywine', 'Cindermark', 'Harth'];
@@ -72,6 +73,7 @@ export function createStartingQuest(wd: WorldData, origin: PlayerLocation, chara
     id: 'guild-sealed-letter',
     title: 'Sealed Orders for the Capital',
     status: 'active',
+    phase: 'deliver-letter',
     giverName,
     giverRole: `Head of the Adventurers' Guild in ${origin.placeName}`,
     origin,
