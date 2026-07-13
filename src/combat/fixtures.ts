@@ -21,6 +21,7 @@ export function makeTestCharacter(classId: CharacterClassId = 'fighter'): Player
     backgroundName: 'Soldier',
     backstoryId: 'duhi_washout',
     backstoryTitle: 'Duhi Troupe Washout',
+    guildRank: 'Ember',
     nationalityId: 1,
     nationalityName: 'Shaterian Theocracy',
     religionId: 2,

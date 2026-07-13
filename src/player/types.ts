@@ -1,5 +1,6 @@
 import type { GameDate } from '../sim/calendar';
 import type { Quest } from '../quests/types';
+import type { GuildRank } from '../lore/guild';
 
 export const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
 export type Ability = (typeof ABILITIES)[number];
@@ -178,6 +179,7 @@ export interface PlayerCharacter {
   backgroundName: string;
   backstoryId: BackstoryId;
   backstoryTitle: string;
+  guildRank: GuildRank;
   nationalityId: number;
   nationalityName: string;
   religionId: number;

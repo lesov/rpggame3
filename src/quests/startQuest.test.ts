@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import type { WorldData } from '../data/worldLoader';
+import { describe, expect, it, beforeAll } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { buildWorldData, type WorldData } from '../data/worldLoader';
 import type { PlayerLocation } from '../player/types';
 import { START_DATE } from '../sim/calendar';
 import { createStartingQuest, startingQuestDestination } from './startQuest';
@@ -48,5 +50,28 @@ describe('starting quest generation', () => {
     const wd = makeQuestWorld();
     const capitalOrigin = { ...origin, cellId: 10, x: 50, y: 50, placeName: 'Crownport' };
     expect(startingQuestDestination(wd, capitalOrigin, 1).placeName).toBe('Southwatch');
+  });
+});
+
+describe('starting quest targets the real Firekeeper', () => {
+  let wd: WorldData;
+  beforeAll(() => {
+    const dir = path.resolve(__dirname, '../../public/data');
+    const read = (f: string) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+    wd = buildWorldData(read('geometry.json'), read('world.json'), read('events.wars.json'));
+  });
+
+  it('names the nation Firekeeper (Sio Empire -> Talaran) as the quest target', () => {
+    const sio = wd.world.states.find((s) => (s.fullName ?? s.name) === 'Sio Empire')!;
+    // A non-capital burg in the Sio Empire is the origin.
+    const startBurg = wd.world.burgs.find((b) => b.state === sio.i && !b.capital)!;
+    const origin: PlayerLocation = {
+      cellId: startBurg.cell, x: startBurg.x, y: startBurg.y,
+      stateId: sio.i, stateName: sio.fullName ?? sio.name, placeName: startBurg.name, reason: 'start',
+    };
+    const quest = createStartingQuest(wd, origin, 'Test Hero', sio.i, START_DATE);
+    expect(quest.targetName).toBe('Firekeeper Talaran');
+    expect(quest.targetRole).toContain('Adventurers');
+    expect(quest.instructions).toContain('Firekeeper Talaran');
   });
 });
