@@ -89,12 +89,25 @@ describe('game clock state', () => {
       boatReachable: false,
     };
     const withPlayer = reducer(initialState(wd), { type: 'setPlayer', player });
+    const withTarget = reducer(withPlayer, {
+      type: 'setTravelTarget',
+      target: {
+        id: destination.id,
+        name: destination.name,
+        kind: destination.kind,
+        x: destination.x,
+        y: destination.y,
+        cellId: destination.cellId,
+      },
+    });
+    expect(withTarget.travelTarget?.name).toBe(target.name);
     const plan = planTravel(wd, player, destination, 'offroad', false, withPlayer.time);
-    const next = reducer(withPlayer, { type: 'travel', plan });
+    const next = reducer(withTarget, { type: 'travel', plan });
 
     // Either way the clock advances, the player moves, and provisions are eaten.
     expect(next.time).not.toEqual(withPlayer.time);
     expect(next.jump?.seq).toBeGreaterThan(withPlayer.jump?.seq ?? 0);
+    expect(next.travelTarget).toBeNull();
     const provisionsLeft = next.player?.inventory.find((i) => i.id === 'provisions')?.quantity ?? 99;
     expect(provisionsLeft).toBeLessThan(99);
 

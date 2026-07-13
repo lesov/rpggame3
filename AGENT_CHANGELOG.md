@@ -2,6 +2,24 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-12 21:06 CDT - codex - feature/codex/travel-target-highlight
+
+- Status: approved
+- Summary: Human tested the travel destination road-default behavior and map target highlight in the live UI and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npm test` — 223 passed; `npm run build` — passed as of the ready-for-review state.
+- UI review: approved-by-human (2026-07-12)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-12 21:00 CDT - codex - feature/codex/travel-target-highlight
+
+- Status: ready-for-review
+- Summary: Travel destination selection now defaults immediately to roads/trails when the selected destination has a road/trail route, otherwise boat for boat-only destinations or off-road as fallback. The selected travel target is stored separately from Inspector selection and highlighted on the map with a blue travel-target ring and label.
+- Files changed: AGENT_CHANGELOG.md, src/player/travel.ts, src/player/travel.test.ts, src/ui/TravelPanel.tsx, src/ui/store.tsx, src/ui/store.test.ts, src/ui/MapView.tsx, src/map/renderer.ts
+- Tests run: `npm test` — 223 passed; `npm run build` — passed (existing Anthropic SDK browser-externalization warnings and chunk-size warning only).
+- UI review: pending-human-test
+- Blockers or coordination notes: Dev server running at http://localhost:5176/ for human UI review. HTTP check returned 200 OK. Leaving untracked source-world files untouched.
+
 ## 2026-07-12 - claude-fable-5 - feature/claude-fable-5/adventurers-guild
 
 - Status: approved / merged

@@ -48,6 +48,15 @@ export interface JumpCommand {
   minZoom?: number;
 }
 
+export interface TravelTargetPreview {
+  id: string;
+  name: string;
+  kind: TravelDestination['kind'];
+  x: number;
+  y: number;
+  cellId: number;
+}
+
 export interface GameState {
   date: GameDate;
   time: GameTime;
@@ -65,6 +74,7 @@ export interface GameState {
   combat: CombatState | null;
   pacing: PacingState;
   pendingEncounter: PendingEncounter | null;
+  travelTarget: TravelTargetPreview | null;
   selectedCodexId: string | null;
   shop: ShopSession | null;
 }
@@ -99,6 +109,7 @@ export type GameAction =
   | { type: 'setOptions'; options: Partial<RenderOptions> }
   | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number }
   | { type: 'setPlayer'; player: PlayerCharacter }
+  | { type: 'setTravelTarget'; target: TravelTargetPreview | null }
   | { type: 'travel'; plan: TravelPlan }
   | { type: 'resumeTravel' }
   | { type: 'attackEncounter' }
@@ -180,6 +191,7 @@ export function initialState(wd: WorldData): GameState {
     combat: null,
     pacing: initialPacing,
     pendingEncounter: null,
+    travelTarget: null,
     selectedCodexId: null,
     shop: null,
   };
@@ -253,6 +265,7 @@ function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameSt
       player: movedPlayer,
       pacing: advancePacing(state.pacing, plan.travelHours),
       pendingEncounter: null,
+      travelTarget: null,
       screen: 'map',
       jump: { seq: (state.jump?.seq ?? 0) + 1, x: location.x, y: location.y, minZoom: 5 },
       focus: { x: location.x, y: location.y },
@@ -285,6 +298,7 @@ function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameSt
     player: movedPlayer,
     pacing: resetPacing(),
     pendingEncounter,
+    travelTarget: null,
     jump: { seq: (state.jump?.seq ?? 0) + 1, x: e.x, y: e.y, minZoom: 6 },
     focus: { x: e.x, y: e.y },
     selection: { cellId: e.cellId, x: e.x, y: e.y },
@@ -352,8 +366,24 @@ export function makeReducer(wd: WorldData) {
           jump,
           focus: { x: location.x, y: location.y },
           selection: { cellId: location.cellId, x: location.x, y: location.y },
+          travelTarget: null,
           panelTab: 'character',
         };
+      }
+      case 'setTravelTarget': {
+        const current = state.travelTarget;
+        const next = action.target;
+        if (
+          current?.id === next?.id &&
+          current?.name === next?.name &&
+          current?.kind === next?.kind &&
+          current?.x === next?.x &&
+          current?.y === next?.y &&
+          current?.cellId === next?.cellId
+        ) {
+          return state;
+        }
+        return { ...state, travelTarget: next };
       }
       case 'travel': {
         if (!state.player) return state;
