@@ -2,6 +2,24 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-13 22:23 CDT - codex - feature/codex/inventory-item-comparison
+
+- Status: approved
+- Summary: Human tested inventory item stats/comparison display in the live UI and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npm test` — 256 passed; `npm run build` — passed as of the ready-for-review state.
+- UI review: approved-by-human (2026-07-13)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-13 22:11 CDT - codex - feature/codex/inventory-item-comparison
+
+- Status: ready-for-review
+- Summary: Inventory now shows comparison-oriented item rows with stat summaries, value, weight, details, equipped comparisons, and equip controls. Added catalog/item metadata hooks for magic items that require identification; unidentified magic hides stats and value until marked identified.
+- Files changed: AGENT_CHANGELOG.md, src/player/types.ts, src/economy/catalog.ts, src/economy/itemDisplay.ts, src/economy/itemDisplay.test.ts, src/ui/InventoryPanel.tsx, src/ui/styles.css
+- Tests run: `npm test` — 256 passed; `npm run build` — passed (existing Anthropic SDK browser-externalization warnings and chunk-size warning only).
+- UI review: pending-human-test
+- Blockers or coordination notes: Dev server running at http://localhost:5173/ for human UI review. HTTP check returned 200 OK. Leaving untracked source-world files untouched.
+
 ## 2026-07-13 22:01 CDT - codex - feature/codex/enemy-loot-drops
 
 - Status: approved

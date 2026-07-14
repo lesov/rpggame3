@@ -44,6 +44,8 @@ export interface CatalogItem {
   armor?: ArmorSpec;
   heal?: string; // dice for a healing consumable, e.g. '2d4+2'
   slot?: 'weapon' | 'armor'; // equippable slot
+  magic?: boolean;
+  requiresIdentify?: boolean;
 }
 
 /** Default weight (lb) for any id without an explicit entry. */
