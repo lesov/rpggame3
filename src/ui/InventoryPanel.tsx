@@ -1,6 +1,7 @@
 import { useGame, settlementVendorsAt } from './store';
-import { weightOf } from '../economy/catalog';
+import { getCatalogItem, weightOf } from '../economy/catalog';
 import { carriedWeight, carryCapacity } from '../economy/encumbrance';
+import { formatItemDisplay } from '../economy/itemDisplay';
 
 export function InventoryPanel() {
   const { state, dispatch, wd } = useGame();
@@ -39,22 +40,36 @@ export function InventoryPanel() {
       <div className="section">
         <h3>Inventory</h3>
         {player.inventory.map((item) => {
-          const equippable = item.category === 'weapon' || item.category === 'armor';
+          const catalog = getCatalogItem(item.id);
+          const equippable = catalog?.slot === 'weapon' || catalog?.slot === 'armor' || item.category === 'weapon' || item.category === 'armor';
           const unit = weightOf(item.id);
-          const label = item.equipped ? 'equipped' : unit > 0 ? `${item.category} · ${unit}lb` : item.category;
+          const display = formatItemDisplay(item, player);
           return (
-            <div className="inventory-row" key={item.id} title={unit > 0 ? `${unit} lb each` : 'weightless'}>
-              <span>{item.name}</span>
-              <span>{item.quantity}</span>
-              <em>{label}</em>
-              {equippable && (
-                <button
-                  className="chip equip-chip"
-                  onClick={() => dispatch(item.equipped ? { type: 'unequipItem', itemId: item.id } : { type: 'equipItem', itemId: item.id })}
-                >
-                  {item.equipped ? 'Unequip' : 'Equip'}
-                </button>
-              )}
+            <div className={`inventory-row${item.equipped ? ' equipped' : ''}`} key={item.id} title={unit > 0 ? `${unit} lb each` : 'weightless'}>
+              <div className="inventory-main">
+                <strong>{item.name}</strong>
+                <span>{display.statSummary}</span>
+              </div>
+              <div className="inventory-qty">x{item.quantity}</div>
+              <div className="inventory-meta">
+                <span>{item.equipped ? 'Equipped' : display.typeLabel}</span>
+                <span>{display.weightLabel}</span>
+                <span>{display.valueLabel}</span>
+              </div>
+              <div className="inventory-detail">
+                {display.compareLabel && <span className="compare-line">{display.compareLabel}</span>}
+                {display.detailLines.map((line) => <span key={line}>{line}</span>)}
+              </div>
+              <div className="inventory-actions">
+                {equippable && !display.hidden && (
+                  <button
+                    className="chip equip-chip"
+                    onClick={() => dispatch(item.equipped ? { type: 'unequipItem', itemId: item.id } : { type: 'equipItem', itemId: item.id })}
+                  >
+                    {item.equipped ? 'Unequip' : 'Equip'}
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
