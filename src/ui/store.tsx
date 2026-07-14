@@ -22,7 +22,9 @@ import type { PlayerCharacter } from '../player/types';
 import { travelDestinationLocation, planTravel, provisionsNeeded, type TravelPlan, type TravelMode, type TravelDestination } from '../player/travel';
 import type { CombatState } from '../combat/types';
 import { createCombat, initialPendingRoll, potionsRemainingById } from '../combat/engine';
+import { generateLoot, type LootItem } from '../combat/loot';
 import { getCatalogItem } from '../economy/catalog';
+import { addItem } from '../economy/money';
 import { shopsForBurg, travellingTraderShop, type Shop } from '../economy/shops';
 import { buyItem as buyFromShop, sellItem as sellToShop, equipItem as equipInventory, unequipItem as unequipInventory } from '../economy/transaction';
 import { getMonster, defaultOpponentFor } from '../combat/monsters';
@@ -79,6 +81,7 @@ export interface GameState {
   travelTarget: TravelTargetPreview | null;
   selectedCodexId: string | null;
   shop: ShopSession | null;
+  pendingLoot: PendingLoot | null;
   /** World trade economy — market prices that move as the clock advances. */
   economy: EconomyState;
 }
@@ -103,6 +106,13 @@ export interface PendingEncounter {
   resume: EncounterResume;
 }
 
+export interface PendingLoot {
+  combatSeed: number;
+  monsterId: string;
+  items: LootItem[];
+  claimed: boolean;
+}
+
 export type GameAction =
   | { type: 'advance'; minutes: number }
   | { type: 'setPlaying'; playing: boolean }
@@ -122,6 +132,8 @@ export type GameAction =
   | { type: 'dismissEncounter' }
   | { type: 'startCombat'; monsterId?: string; seed?: number }
   | { type: 'setCombat'; combat: CombatState }
+  | { type: 'claimCombatLoot' }
+  | { type: 'leaveCombatLoot' }
   | { type: 'endCombat' }
   | { type: 'openShop'; vendors: Shop[] }
   | { type: 'openTravelShop' }
@@ -200,6 +212,7 @@ export function initialState(wd: WorldData): GameState {
     travelTarget: null,
     selectedCodexId: null,
     shop: null,
+    pendingLoot: null,
     economy: initEconomy(wd),
   };
 }
@@ -434,10 +447,43 @@ export function makeReducer(wd: WorldData) {
         if (!state.player) return state;
         const seed = action.seed ?? ((Math.random() * 0x7fffffff) | 0);
         const combat = beginCombat(wd, state.player, state.date, state.time, action.monsterId, seed);
-        return { ...state, screen: 'combat', combat, playing: false };
+        return { ...state, screen: 'combat', combat, pendingLoot: null, playing: false };
       }
       case 'setCombat':
         return { ...state, combat: action.combat };
+      case 'claimCombatLoot': {
+        if (!state.player || !state.combat || state.combat.outcome !== 'victory') return state;
+        const existing = state.pendingLoot?.combatSeed === state.combat.seed ? state.pendingLoot : null;
+        if (existing?.claimed) return state;
+        const items = existing?.items ?? generateLoot(state.combat.monsterId, state.combat.seed, state.combat.outcome);
+        let player = state.player;
+        for (const item of items) player = addItem(player, item.id, item.quantity);
+        return {
+          ...state,
+          player,
+          pendingLoot: {
+            combatSeed: state.combat.seed,
+            monsterId: state.combat.monsterId,
+            items,
+            claimed: true,
+          },
+        };
+      }
+      case 'leaveCombatLoot': {
+        if (!state.combat) return state;
+        const items = state.pendingLoot?.combatSeed === state.combat.seed
+          ? state.pendingLoot.items
+          : generateLoot(state.combat.monsterId, state.combat.seed, state.combat.outcome);
+        return {
+          ...state,
+          pendingLoot: {
+            combatSeed: state.combat.seed,
+            monsterId: state.combat.monsterId,
+            items,
+            claimed: true,
+          },
+        };
+      }
       case 'endCombat': {
         // Persist potions drunk during the fight back to the player's inventory,
         // reconciling each healing-potion grade by its own id.
@@ -451,7 +497,7 @@ export function makeReducer(wd: WorldData) {
               .filter((item) => item.quantity > 0),
           };
         }
-        return { ...state, screen: 'map', combat: null, player };
+        return { ...state, screen: 'map', combat: null, player, pendingLoot: null };
       }
       case 'openShop': {
         if (!state.player || action.vendors.length === 0) return state;

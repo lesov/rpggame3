@@ -157,6 +157,20 @@ export const CATALOG: CatalogItem[] = [
   { id: 'lantern', name: 'Hooded lantern', category: 'tool', quality: 'fine', basePrice: 25, weight: 2, note: 'A shuttered oil lantern.' },
   { id: 'healers-kit', name: "Healer's kit", category: 'tool', quality: 'fine', basePrice: 40, weight: 3, note: 'Bandages and salves — stabilises the dying.' },
 
+  // --- Loot and salvage ---
+  { id: 'wolf-pelt', name: 'Wolf pelt', category: 'gear', quality: 'common', basePrice: 4, weight: 6, note: 'A rough pelt useful to a tanner.' },
+  { id: 'dog-pelt', name: 'Dog pelt', category: 'gear', quality: 'common', basePrice: 1, weight: 4, note: 'Mangy hide; only a desperate tanner pays for it.' },
+  { id: 'bear-pelt', name: 'Bear pelt', category: 'gear', quality: 'common', basePrice: 18, weight: 20, note: 'Heavy, warm, and valuable if not too badly cut.' },
+  { id: 'animal-teeth', name: 'Animal teeth', category: 'gear', quality: 'common', basePrice: 2, weight: 0, note: 'Teeth and claws for charms, buttons, and cheap trophies.' },
+  { id: 'raw-meat', name: 'Raw meat', category: 'gear', quality: 'common', basePrice: 1, weight: 4, note: 'Fresh meat; useful soon, worthless if left too long.' },
+  { id: 'bone-fragments', name: 'Bone fragments', category: 'gear', quality: 'common', basePrice: 1, weight: 2, note: 'Clean fragments sometimes bought by scrimshawers or apothecaries.' },
+  { id: 'old-signet', name: 'Old signet', category: 'gear', quality: 'common', basePrice: 8, weight: 0, note: 'A battered personal seal from a forgotten owner.' },
+  { id: 'tarnished-charm', name: 'Tarnished charm', category: 'gear', quality: 'common', basePrice: 5, weight: 0, note: 'A cheap charm with enough silver wash to be worth keeping.' },
+  { id: 'cult-token', name: 'Cult token', category: 'gear', quality: 'common', basePrice: 3, weight: 0, note: 'A crude devotional token, troubling but sellable to collectors of oddities.' },
+  { id: 'rusty-scrap', name: 'Rusty scrap', category: 'gear', quality: 'common', basePrice: 1, weight: 3, note: 'Bent metal and broken fittings fit only for salvage.' },
+  { id: 'orc-tusk', name: 'Orc tusk', category: 'gear', quality: 'common', basePrice: 3, weight: 0, note: 'A filed tusk often kept as proof of a dangerous fight.' },
+  { id: 'patched-gambeson', name: 'Patched gambeson', category: 'armor', quality: 'common', basePrice: 5, weight: 8, note: 'Stained, repaired padding; protection if you are desperate.', armor: { acBase: 11, dexCap: Infinity }, slot: 'armor' },
+
   // --- Clothing & the wizard spellbook: not sold (basePrice 0), but weighed ---
   { id: 'robe', name: 'Plain robe', category: 'clothing', quality: 'common', basePrice: 0, weight: 4, note: 'Coarse, travel-stained, and intentionally unmarked.' },
   { id: 'sandals', name: 'Worn sandals', category: 'clothing', quality: 'common', basePrice: 0, weight: 0, note: 'Enough for the road, barely.' },

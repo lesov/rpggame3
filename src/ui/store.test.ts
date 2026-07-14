@@ -5,6 +5,7 @@ import { buildWorldData, type WorldData } from '../data/worldLoader';
 import { MINUTES_PER_DAY, START_DATE, START_TIME, toOrdinal } from '../sim/calendar';
 import { initialState, makeReducer, settlementVendorsAt } from './store';
 import { makeTestCharacter } from '../combat/fixtures';
+import { generateLoot } from '../combat/loot';
 import { planTravel, type TravelDestination } from '../player/travel';
 import { voselsOf, quantityOf } from '../economy/money';
 
@@ -93,6 +94,29 @@ describe('game clock state', () => {
     expect(s.player?.quests[0].steps.map((step) => step.status)).toEqual(['completed', 'completed', 'active']);
     expect(s.player?.quests[0].responseReadyAt).toBeUndefined();
     expect(s.player?.inventory.find((item) => item.id === 'guild-response-letter')?.note).toContain(quest.origin.placeName);
+  });
+
+  it('claims victory loot once and adds it to inventory', () => {
+    const reducer = makeReducer(wd);
+    const player = makeTestCharacter('fighter');
+    const seed = Array.from({ length: 80 }, (_, i) => i + 1).find((n) => generateLoot('bandit', n, 'victory').length > 0)!;
+    let s = reducer(initialState(wd), { type: 'setPlayer', player });
+    s = reducer(s, { type: 'startCombat', monsterId: 'bandit', seed });
+    s = reducer(s, { type: 'setCombat', combat: { ...s.combat!, outcome: 'victory', phase: 'ended' } });
+    const loot = generateLoot('bandit', seed, 'victory');
+    expect(loot.length).toBeGreaterThan(0);
+
+    s = reducer(s, { type: 'claimCombatLoot' });
+    for (const item of loot) {
+      expect(quantityOf(s.player!, item.id)).toBeGreaterThanOrEqual(item.quantity);
+    }
+    const afterFirstClaim = s.player!.inventory.map((item) => [item.id, item.quantity]);
+
+    s = reducer(s, { type: 'claimCombatLoot' });
+    expect(s.player!.inventory.map((item) => [item.id, item.quantity])).toEqual(afterFirstClaim);
+
+    s = reducer(s, { type: 'endCombat' });
+    expect(s.pendingLoot).toBeNull();
   });
 
   it('commits travel by advancing time, moving the player, and consuming provisions', () => {
