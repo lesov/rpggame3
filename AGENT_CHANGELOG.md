@@ -2,6 +2,24 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-13 22:01 CDT - codex - feature/codex/enemy-loot-drops
+
+- Status: approved
+- Summary: Human tested enemy loot drops in the live UI and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npm test` — 251 passed; `npm run build` — passed as of the ready-for-review state.
+- UI review: approved-by-human (2026-07-13)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-13 21:53 CDT - codex - feature/codex/enemy-loot-drops
+
+- Status: ready-for-review
+- Summary: Added contextual enemy loot drops after combat victories. Loot tables are monster-specific and deterministic from combat seed; victory overlays now show dropped items with Take all/Leave actions; claiming loot merges catalog-backed items into player inventory once and clears when combat ends.
+- Files changed: AGENT_CHANGELOG.md, src/combat/loot.ts, src/combat/loot.test.ts, src/economy/catalog.ts, src/ui/CombatScreen.tsx, src/ui/store.tsx, src/ui/store.test.ts, src/ui/styles.css
+- Tests run: `npm test` — 251 passed; `npm run build` — passed (existing Anthropic SDK browser-externalization warnings and chunk-size warning only).
+- UI review: pending-human-test
+- Blockers or coordination notes: Dev server running at http://localhost:5173/ for human UI review. HTTP check returned 200 OK. Leaving untracked source-world files untouched.
+
 ## 2026-07-13 - claude-fable-5 - feature/claude-fable-5/trade-economy
 
 - Status: approved / merged

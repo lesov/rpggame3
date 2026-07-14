@@ -14,6 +14,7 @@ import { PlainNarrator } from '../combat/narrator/plain';
 import { narratableEvents, type NarrativeProvider } from '../combat/narrator/types';
 import { calcLinesForEvents, type CalcLine } from './combatLog';
 import { ApiKeyBar } from './ApiKeyBar';
+import { generateLoot } from '../combat/loot';
 
 interface Beat {
   id: number;
@@ -242,6 +243,11 @@ function EndOverlay({ combat, outro }: { combat: CombatState; outro?: Beat }) {
     pe && state.player
       ? planTravel(wd, state.player, pe.resume.destination, pe.resume.mode, pe.resume.dayOnly, state.time)
       : null;
+  const lootState = state.pendingLoot?.combatSeed === combat.seed ? state.pendingLoot : null;
+  const loot = combat.outcome === 'victory'
+    ? lootState?.items ?? generateLoot(combat.monsterId, combat.seed, combat.outcome)
+    : [];
+  const lootHandled = Boolean(lootState?.claimed);
 
   return (
     <div className="combat-overlay" data-testid="combat-overlay">
@@ -257,6 +263,35 @@ function EndOverlay({ combat, outro }: { combat: CombatState; outro?: Beat }) {
             <strong>{formatRemaining(remaining.elapsedMinutes)}</strong> and {Math.round(remaining.distanceMi)} mi still to reach{' '}
             <strong>{pe!.resume.destination.name}</strong>.
           </p>
+        )}
+        {combat.outcome === 'victory' && !picking && (
+          <div className="loot-box" data-testid="loot-box">
+            <h3>Loot</h3>
+            {loot.length === 0 ? (
+              <p>Nothing useful remains.</p>
+            ) : lootHandled ? (
+              <p>Loot handled.</p>
+            ) : (
+              <>
+                <div className="loot-list">
+                  {loot.map((item) => (
+                    <div className="loot-row" key={item.id}>
+                      <span>{item.name}</span>
+                      <em>x{item.quantity}</em>
+                    </div>
+                  ))}
+                </div>
+                <div className="loot-actions">
+                  <button className="primary-action" onClick={() => dispatch({ type: 'claimCombatLoot' })}>
+                    Take all
+                  </button>
+                  <button className="secondary-action" onClick={() => dispatch({ type: 'leaveCombatLoot' })}>
+                    Leave
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         )}
         {picking ? null : fromTravel ? (
           <div className="overlay-actions">
