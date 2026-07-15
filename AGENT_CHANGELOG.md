@@ -4,12 +4,12 @@ Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
 ## 2026-07-14 22:28 CDT - codex - feature/codex/remove-starting-battle
 
-- Status: approved
-- Summary: Human tested the removal of the automatic post-creation battle and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Status: merged
+- Summary: Human tested the removal of the automatic post-creation battle and stated "everything is checked ok"; feature branch was committed and merged into main locally.
 - Files changed: AGENT_CHANGELOG.md, src/ui/CharacterBuilder.tsx, src/ui/store.test.ts, src/ui/styles.css
 - Tests run: `npm test` — 257 passed; `npm run build` — passed (existing Anthropic SDK browser-externalization warnings and chunk-size warning only).
 - UI review: approved-by-human (2026-07-14)
-- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually. Leaving untracked source-world files untouched.
+- Blockers or coordination notes: Merged into main locally with merge commit. Do not push; human will push manually. Leaving untracked source-world files untouched.
 
 ## 2026-07-13 22:23 CDT - codex - feature/codex/inventory-item-comparison
 
