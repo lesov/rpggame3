@@ -14,6 +14,7 @@ import { CodexPanel } from './CodexPanel';
 import { TradePanel } from './TradePanel';
 import { ShopScreen } from './ShopScreen';
 import { QuestPanel } from './QuestPanel';
+import { SaveLoadModal } from './SaveLoadModal';
 
 function LayerToggles() {
   const { state, dispatch } = useGame();
@@ -124,6 +125,7 @@ function SidePanel() {
 
 function Shell() {
   const { state } = useGame();
+  const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   if (state.screen === 'combat') return <CombatScreen />;
   if (state.screen === 'encounter') return <EncounterModal />;
   if (state.screen === 'shop') return <ShopScreen />;
@@ -133,12 +135,16 @@ function Shell() {
         <h1>Lepasoul</h1>
         <TimeControls />
         <LayerToggles />
+        <button className="save-menu-button" onClick={() => setSaveMenuOpen(true)}>
+          Save / Load
+        </button>
       </header>
       <main className="app-main">
         <MapView />
         <SidePanel />
       </main>
       <ResumeBanner />
+      {saveMenuOpen && <SaveLoadModal onClose={() => setSaveMenuOpen(false)} />}
     </div>
   );
 }

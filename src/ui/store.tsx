@@ -123,6 +123,7 @@ export type GameAction =
   | { type: 'setOptions'; options: Partial<RenderOptions> }
   | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number }
   | { type: 'setPlayer'; player: PlayerCharacter }
+  | { type: 'loadGame'; state: GameState }
   | { type: 'setTravelTarget'; target: TravelTargetPreview | null }
   | { type: 'deliverQuestLetter'; questId: string }
   | { type: 'waitForQuestResponse'; questId: string }
@@ -392,6 +393,15 @@ export function makeReducer(wd: WorldData) {
           travelTarget: null,
           panelTab: 'character',
         };
+      }
+      case 'loadGame': {
+        // Recenter the map on the loaded position (deserialize left jump/focus null).
+        const loaded = action.state;
+        const loc = loaded.player?.location;
+        const jump: JumpCommand | null = loc
+          ? { seq: (state.jump?.seq ?? 0) + 1, x: loc.x, y: loc.y, minZoom: 6 }
+          : null;
+        return { ...loaded, jump, focus: loc ? { x: loc.x, y: loc.y } : null };
       }
       case 'setTravelTarget': {
         const current = state.travelTarget;

@@ -1068,3 +1068,66 @@ button.active { background: var(--accent-2); border-color: var(--accent-2); colo
 .spread-good { flex: 0 0 100%; color: var(--text); font-weight: 600; }
 .spread-detail { flex: 1; color: var(--text-dim); }
 .spread-ratio { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---------- save / load ---------- */
+.save-menu-button { border-radius: 999px; padding: 4px 12px; }
+.save-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 10, 14, 0.72);
+  backdrop-filter: blur(2px);
+}
+.save-modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px 20px;
+  width: 90%;
+  max-width: 560px;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+.save-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.save-modal-head h2 { margin: 0; color: var(--accent); font-size: 20px; }
+.save-close { border: none; background: transparent; color: var(--text-dim); font-size: 16px; padding: 2px 6px; }
+.save-close:hover { color: var(--text); border: none; }
+.save-hint { font-size: 12.5px; color: var(--text-dim); margin: 0 0 10px; }
+.save-error {
+  font-size: 12.5px;
+  color: var(--danger);
+  background: rgba(201, 106, 90, 0.12);
+  border: 1px solid rgba(201, 106, 90, 0.4);
+  border-radius: 6px;
+  padding: 6px 9px;
+  margin: 0 0 10px;
+}
+.save-slots { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.save-slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.save-slot.filled { border-color: var(--accent-2); }
+.save-slot-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.save-slot-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); }
+.save-slot-name { font-weight: 600; font-size: 13.5px; color: var(--text); }
+.save-slot-detail { font-size: 12.5px; color: var(--text); }
+.save-slot-meta { font-size: 11px; color: var(--text-dim); }
+.save-slot-empty { font-size: 13px; color: var(--text-dim); font-style: italic; }
+.save-slot-actions { display: flex; gap: 6px; flex: none; }
+.save-slot-actions button { font-size: 12px; padding: 4px 10px; }
+.save-slot-actions .save-delete:not(:disabled) { color: var(--danger); }
+
+@media (max-width: 560px) {
+  .save-slot { flex-direction: column; align-items: stretch; }
+  .save-slot-actions { justify-content: flex-end; }
+}
