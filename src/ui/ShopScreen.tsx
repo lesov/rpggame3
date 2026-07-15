@@ -1,8 +1,10 @@
 import { useGame } from './store';
-import { getCatalogItem, weightOf, type ItemQuality } from '../economy/catalog';
+import { getCatalogItem, type ItemQuality } from '../economy/catalog';
+import { formatItemDisplay } from '../economy/itemDisplay';
 import { voselsOf } from '../economy/money';
 import { sellPrice, isSellable } from '../economy/transaction';
 import { carriedWeight, carryCapacity, wouldExceedCapacity } from '../economy/encumbrance';
+import type { InventoryItem, PlayerCharacter } from '../player/types';
 
 const QUALITY_LABEL: Record<ItemQuality, string> = {
   common: 'Common',
@@ -12,6 +14,28 @@ const QUALITY_LABEL: Record<ItemQuality, string> = {
 
 function QualityBadge({ quality }: { quality: ItemQuality }) {
   return <span className={`quality-badge quality-${quality}`}>{QUALITY_LABEL[quality]}</span>;
+}
+
+function ShopItemDetails({ item, player }: { item: InventoryItem; player: PlayerCharacter }) {
+  const display = formatItemDisplay(item, player);
+  const detailLines = display.detailLines.filter((line) => line && line !== display.statSummary);
+
+  return (
+    <>
+      <span className="shop-item-stat">{display.statSummary}</span>
+      <div className="shop-item-meta">
+        <span>{display.typeLabel}</span>
+        <span>{display.weightLabel}</span>
+        <span>Base {display.valueLabel}</span>
+      </div>
+      {(display.compareLabel || detailLines.length > 0) && (
+        <div className="shop-item-detail">
+          {display.compareLabel && <span className="compare-line">{display.compareLabel}</span>}
+          {detailLines.map((line) => <span key={line}>{line}</span>)}
+        </div>
+      )}
+    </>
+  );
 }
 
 export function ShopScreen() {
@@ -70,17 +94,21 @@ export function ShopScreen() {
                 const cat = getCatalogItem(entry.itemId);
                 const afford = vosels >= entry.price;
                 const tooHeavy = wouldExceedCapacity(player, entry.itemId, 1);
-                const unit = weightOf(entry.itemId);
                 const reason = !afford ? 'Not enough vosels' : tooHeavy ? 'Too heavy to carry' : undefined;
+                const item: InventoryItem = {
+                  id: entry.itemId,
+                  name: cat?.name ?? entry.itemId,
+                  quantity: entry.qty,
+                  category: cat?.category ?? 'gear',
+                };
                 return (
                   <div className="shop-row" key={`${entry.itemId}-${index}`}>
                     <div className="shop-item">
-                      <span className="shop-item-name">
-                        {cat?.name ?? entry.itemId}
-                        {unit > 0 && <span className="shop-item-weight"> · {unit} lb</span>}
-                      </span>
-                      {cat && <QualityBadge quality={cat.quality} />}
-                      {cat?.note && <span className="shop-item-note">{cat.note}</span>}
+                      <div className="shop-item-heading">
+                        <span className="shop-item-name">{item.name}</span>
+                        {cat && <QualityBadge quality={cat.quality} />}
+                      </div>
+                      <ShopItemDetails item={item} player={player} />
                     </div>
                     <span className="shop-qty">×{entry.qty}</span>
                     <span className="shop-price">{entry.price}</span>
@@ -107,8 +135,11 @@ export function ShopScreen() {
                 return (
                   <div className="shop-row" key={item.id}>
                     <div className="shop-item">
-                      <span className="shop-item-name">{item.name}</span>
-                      {cat && <QualityBadge quality={cat.quality} />}
+                      <div className="shop-item-heading">
+                        <span className="shop-item-name">{item.name}</span>
+                        {cat && <QualityBadge quality={cat.quality} />}
+                      </div>
+                      <ShopItemDetails item={item} player={player} />
                     </div>
                     <span className="shop-qty">×{item.quantity}</span>
                     <span className="shop-price">{sellPrice(vendor, item.id)}</span>

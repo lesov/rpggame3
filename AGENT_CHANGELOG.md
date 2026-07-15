@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-14 22:38 CDT - codex - feature/codex/shop-item-details
+
+- Status: approved
+- Summary: Human tested shop/trader item stats and comparison display and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md, src/ui/ShopScreen.tsx, src/ui/styles.css
+- Tests run: `npm test` — 257 passed; `npm run build` — passed (existing Anthropic SDK browser-externalization warnings and chunk-size warning only).
+- UI review: approved-by-human (2026-07-14)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually. Leaving untracked source-world files untouched.
+
 ## 2026-07-14 22:28 CDT - codex - feature/codex/remove-starting-battle
 
 - Status: merged
