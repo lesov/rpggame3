@@ -60,6 +60,14 @@ describe('game clock state', () => {
     expect(next.selectedCodexId).toBe('duhi-troupe');
   });
 
+  it('setting a newly created player keeps normal map gameplay instead of starting combat', () => {
+    const reducer = makeReducer(wd);
+    const next = reducer(initialState(wd), { type: 'setPlayer', player: makeTestCharacter('fighter') });
+    expect(next.screen).toBe('map');
+    expect(next.combat).toBeNull();
+    expect(next.player?.name).toBe('Testovar');
+  });
+
   it('advances the starting courier quest at the capital and grants the response letter after two hours', () => {
     const reducer = makeReducer(wd);
     const pc = makeTestCharacter('fighter');

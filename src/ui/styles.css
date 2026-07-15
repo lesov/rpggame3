@@ -594,8 +594,6 @@ button.active { background: var(--accent-2); border-color: var(--accent-2); colo
 .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
 
 /* ---------- combat ---------- */
-.battle-test-btn { width: 100%; margin-bottom: 12px; }
-
 .combat-screen {
   position: absolute;
   inset: 0;
