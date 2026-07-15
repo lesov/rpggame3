@@ -191,6 +191,51 @@ export interface Zone {
   cells: number[];
 }
 
+export type PersonalityTrait =
+  | 'Ambitious'
+  | 'Content'
+  | 'Arbitrary'
+  | 'Just'
+  | 'Arrogant'
+  | 'Humble'
+  | 'Brave'
+  | 'Craven'
+  | 'Calm'
+  | 'Wrathful'
+  | 'Chaste'
+  | 'Lustful'
+  | 'Compassionate'
+  | 'Callous'
+  | 'Cynical'
+  | 'Zealous'
+  | 'Deceitful'
+  | 'Honest'
+  | 'Diligent'
+  | 'Lazy'
+  | 'Forgiving'
+  | 'Vengeful'
+  | 'Generous'
+  | 'Greedy'
+  | 'Gregarious'
+  | 'Shy'
+  | 'Impatient'
+  | 'Patient'
+  | 'Trusting'
+  | 'Paranoid'
+  | 'Reckless'
+  | 'Cautious'
+  | 'Cruel / Sadistic'
+  | 'Stubborn'
+  | 'Temperate'
+  | 'Haunted / Anxious'
+  | 'Drunkard'
+  | 'Loyal'
+  | 'Curious'
+  | 'Superstitious'
+  | 'Deformed / Badly Scarred'
+  | 'Eccentric'
+  | 'Fickle';
+
 export interface Person {
   id: string;
   role: string;
@@ -206,6 +251,7 @@ export interface Person {
   capital?: string;
   religion?: string;
   bio: string;
+  personalityTraits?: [PersonalityTrait, PersonalityTrait, PersonalityTrait];
 }
 
 export interface Regiment {

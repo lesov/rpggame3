@@ -6,6 +6,7 @@ import type { WorldData } from './worldLoader';
 import { elevationFt, depthFt, formatLatLon } from './worldLoader';
 import type { Burg, Person, State, Zone, Marker, Regiment, River } from './types';
 import { guildLeaderPeople } from '../lore/guild';
+import { withPersonalityTraits } from './personality';
 
 export interface PlaceInfo {
   cellId: number;
@@ -234,8 +235,8 @@ export function findNearby(wd: WorldData, x: number, y: number, radiusMi = 75, l
 export function peopleFor(wd: WorldData, stateId?: number, religionName?: string): Person[] {
   const out: Person[] = [];
   for (const p of wd.world.people) {
-    if (stateId !== undefined && p.stateId === stateId) out.push(p);
-    else if (religionName && p.religionName === religionName) out.push(p);
+    if (stateId !== undefined && p.stateId === stateId) out.push(withPersonalityTraits(p));
+    else if (religionName && p.religionName === religionName) out.push(withPersonalityTraits(p));
   }
   if (stateId !== undefined) {
     const state = wd.stateById.get(stateId);

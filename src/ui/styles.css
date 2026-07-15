@@ -191,6 +191,17 @@ button.active { background: var(--accent-2); border-color: var(--accent-2); colo
 .person-card:hover { border-color: var(--accent-2); }
 .person-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; flex-wrap: wrap; }
 .person-meta { color: var(--text-dim); font-size: 11.5px; }
+.person-traits {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  font-size: 11.5px;
+}
+.person-trait-label, .person-trait-hidden { color: var(--text-dim); }
+.person-trait-list { color: var(--accent); overflow-wrap: anywhere; }
+.person-trait-toggle { padding: 2px 7px; font-size: 11.5px; }
 .person-bio { margin-top: 6px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
 
 .building-list { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; line-height: 1.55; }

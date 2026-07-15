@@ -8,6 +8,7 @@ import { CellIndex } from '../map/hittest';
 import type { CellClimate } from '../sim/weather';
 import { buildScriptedEvents, type WorldEvent, type TimelineEntry } from '../sim/events';
 import type { AmbientContext } from '../sim/ambient';
+import { withPersonalityTraits } from './personality';
 import timelineJson from '../../data/events.timeline.json';
 
 export interface WorldData {
@@ -37,6 +38,10 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 export function buildWorldData(geometry: Geometry, world: World, warsFile: WarsFile): WorldData {
   const { mapCoordinates: mc, width, height, distanceScale } = geometry;
+  const worldWithPeople: World = {
+    ...world,
+    people: world.people.map(withPersonalityTraits),
+  };
 
   const latOf = (y: number) => mc.latN - (y / height) * mc.latT;
   const lonOf = (x: number) => mc.lonW + (x / width) * mc.lonT;
@@ -44,11 +49,11 @@ export function buildWorldData(geometry: Geometry, world: World, warsFile: WarsF
   const cells = geometry.cells;
   const cellIndex = new CellIndex(cells, 32, width, height);
 
-  const burgById = new Map(world.burgs.map((b) => [b.i, b]));
-  const stateById = new Map(world.states.map((s) => [s.i, s]));
-  const provinceById = new Map(world.provinces.map((p) => [p.i, p]));
-  const cultureById = new Map(world.cultures.map((c) => [c.i, c]));
-  const religionById = new Map(world.religions.map((r) => [r.i, r]));
+  const burgById = new Map(worldWithPeople.burgs.map((b) => [b.i, b]));
+  const stateById = new Map(worldWithPeople.states.map((s) => [s.i, s]));
+  const provinceById = new Map(worldWithPeople.provinces.map((p) => [p.i, p]));
+  const cultureById = new Map(worldWithPeople.cultures.map((c) => [c.i, c]));
+  const religionById = new Map(worldWithPeople.religions.map((r) => [r.i, r]));
 
   const climateOf = (cellId: number): CellClimate => {
     const c = cells[cellId];
@@ -67,7 +72,7 @@ export function buildWorldData(geometry: Geometry, world: World, warsFile: WarsF
 
   // Ambient context: sizable settlements for weather/rumors; a burg for each
   // faith's center cell (for festivals).
-  const ambientBurgs = world.burgs
+  const ambientBurgs = worldWithPeople.burgs
     .filter((b) => b.population >= 5000)
     .map((b) => ({
       i: b.i,
@@ -83,7 +88,7 @@ export function buildWorldData(geometry: Geometry, world: World, warsFile: WarsF
     if (c.burg) return c.burg;
     let best: number | undefined;
     let bestD = Infinity;
-    for (const b of world.burgs) {
+    for (const b of worldWithPeople.burgs) {
       const dx = b.x - c.p[0];
       const dy = b.y - c.p[1];
       const d = dx * dx + dy * dy;
@@ -97,7 +102,7 @@ export function buildWorldData(geometry: Geometry, world: World, warsFile: WarsF
 
   const ambientCtx: AmbientContext = {
     burgs: ambientBurgs,
-    markers: world.markers.map((m) => ({
+    markers: worldWithPeople.markers.map((m) => ({
       i: m.i,
       type: m.type,
       icon: m.icon,
@@ -105,7 +110,7 @@ export function buildWorldData(geometry: Geometry, world: World, warsFile: WarsF
       name: m.name,
       legend: m.legend,
     })),
-    religions: world.religions
+    religions: worldWithPeople.religions
       .filter((r) => r.i > 0)
       .map((r) => ({
         i: r.i,
@@ -119,7 +124,7 @@ export function buildWorldData(geometry: Geometry, world: World, warsFile: WarsF
 
   return {
     geometry,
-    world,
+    world: worldWithPeople,
     wars: warsFile.wars,
     cellIndex,
     burgById,

@@ -5,6 +5,7 @@
  * string. Each nation's capital burg is the file's capital-hall city.
  */
 import type { Burg, Person, State } from '../data/types';
+import { withPersonalityTraits } from '../data/personality';
 
 /** Rank ladder, marked by fire: from newly sworn to national head. */
 export type GuildRank = 'Spark' | 'Ember' | 'Flame' | 'Hearth' | 'Firekeeper';
@@ -86,7 +87,7 @@ export function guildLeaderPeople(state: State): Person[] {
   if (!fk) return [];
   const title = fk.isSpeaker ? 'Firekeeper, Speaker of the Campfire' : 'Firekeeper';
   return [
-    {
+    withPersonalityTraits({
       id: `firekeeper-${state.i}`,
       role: 'guild_firekeeper',
       title,
@@ -97,6 +98,6 @@ export function guildLeaderPeople(state: State): Person[] {
       stateId: state.i,
       stateName: state.fullName ?? state.name,
       bio: fk.bio,
-    },
+    }),
   ];
 }

@@ -42,6 +42,7 @@ function buildingLabel(b: SettlementBuilding): string {
 
 function PersonCard({ p }: { p: Person }) {
   const [open, setOpen] = useState(false);
+  const [traitsRevealed, setTraitsRevealed] = useState(false);
   const roleLabel =
     p.role === 'state_ruler' ? 'Ruler'
     : p.role === 'military_leader' ? 'Warlord'
@@ -52,6 +53,24 @@ function PersonCard({ p }: { p: Person }) {
       <div className="person-head">
         <strong>{p.title} {p.name}</strong>
         <span className="person-meta">{roleLabel} · {p.race}, {p.age}</span>
+      </div>
+      <div className="person-traits">
+        <span className="person-trait-label">Traits</span>
+        {traitsRevealed ? (
+          <span className="person-trait-list">{p.personalityTraits?.join(' · ') ?? 'Unknown'}</span>
+        ) : (
+          <span className="person-trait-hidden">Hidden</span>
+        )}
+        <button
+          className="person-trait-toggle"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setTraitsRevealed((shown) => !shown);
+          }}
+        >
+          {traitsRevealed ? 'Hide' : 'Unhide'}
+        </button>
       </div>
       {open && <div className="person-bio">{p.bio}</div>}
     </div>
