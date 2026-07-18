@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-18 18:53 CDT - codex - feature/codex/biome-encounters
+
+- Status: approved
+- Summary: Human tested the biome/remoteness encounter behavior and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 275 passed; `npx tsc -b` — clean; `npm run build` — passed as of ready-for-review entry.
+- UI review: approved-by-human (2026-07-18)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-18 17:03 CDT - codex - feature/codex/biome-encounters
+
+- Status: ready-for-review
+- Summary: Added 12 SRD/D&D-flavored level-1 enemy types (kobold scout, gnoll marauder, hobgoblin soldier, bugbear ambusher, giant rat, giant spider, stirge swarm, ice mephit, dust mephit, imp, ghoul, sprite archer). Travel encounter actor selection now computes wilderness level from road/pop/nearest burg/markers; remote/deep wild routes sharply suppress brigands and peaceful road traffic, cold biomes suppress fiends/imps and favor elementals/goblinoids/undead, wetlands favor spiders/stirges/vermin/undead, and statblock picks use per-monster biome/remoteness/road/marker affinity metadata.
+- Files changed: AGENT_CHANGELOG.md, src/combat/monsters.ts, src/combat/types.ts, src/combat/kits.test.ts, src/travel/encounter/{types,disposition,tables,run}.ts, src/travel/encounter/tables.test.ts, src/ui/EncounterModal.tsx.
+- Tests run: `npx vitest run src/travel/encounter/tables.test.ts src/travel/encounter/run.test.ts src/travel/encounter/disposition.test.ts src/combat/kits.test.ts src/combat/engine.test.ts` — 60 passed; `npx tsc -b` — clean; `npx vitest run` — 275 passed; `npm run build` — passed with existing Anthropic SDK browser-externalization and chunk-size warnings.
+- UI review: pending-human-test — encounter modal has labels for new fiend/elemental/fey actor categories; no layout changes.
+- Blockers or coordination notes: Working branch is feature/codex/biome-encounters. Existing untracked lore/world source files remain untouched.
+
+## 2026-07-18 16:55 CDT - codex - feature/codex/biome-encounters
+
+- Status: started
+- Summary: Add 12 D&D/SRD-flavored enemy types and make travel encounter actor/statblock selection better aligned with biome, remoteness/wilderness level, roads, season, time of day, and hostile markers. Keep rate/disposition split intact.
+- Files changed: AGENT_CHANGELOG.md; planned src/combat/monsters.ts, src/travel/encounter/{types,tables,run}.ts and focused tests.
+- Tests run: not run yet.
+- UI review: not-applicable
+- Blockers or coordination notes: Working from main on a dedicated feature branch. Existing untracked lore/world files are human-owned/source inputs and will be left untouched.
+
 ## 2026-07-18 - claude-fable-5 - feature/claude-fable-5/codex-gates-carried-word
 
 - Status: approved

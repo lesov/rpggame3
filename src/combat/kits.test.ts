@@ -88,8 +88,8 @@ describe('class combat kits', () => {
 });
 
 describe('monsters', () => {
-  it('roster has 10 well-formed foes across difficulties', () => {
-    expect(MONSTERS.length).toBe(10);
+  it('roster has 22 well-formed foes across difficulties', () => {
+    expect(MONSTERS.length).toBe(22);
     const difficulties = new Set(MONSTERS.map((m) => m.difficulty));
     expect(difficulties).toEqual(new Set(['easy', 'fair', 'hard']));
     for (const m of MONSTERS) {
