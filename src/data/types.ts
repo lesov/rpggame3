@@ -67,8 +67,6 @@ export interface SettlementBuilding {
   religion?: string;
   religionType?: string;
   hasMessageBoard?: boolean;
-  hasTeleportPortal?: boolean;
-  portalFeeGold?: number;
 }
 
 export interface Burg {
@@ -96,6 +94,8 @@ export interface Burg {
     majorTemple?: { name: string; religion: string };
     palace?: { name: string; kind: string; seatOf: string };
   };
+  /** One of the fifteen ancient portals ("the Ways"), named for the great city of the era that raised it. */
+  portal?: { name?: string; feeGold: number };
 }
 
 export interface Campaign {

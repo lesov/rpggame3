@@ -98,6 +98,44 @@ describe('preprocess output schema', () => {
     expect(roles.has('state_ruler')).toBe(true);
   });
 
+  it('places the fifteen portals exactly at the portals-marker burgs', () => {
+    const { world } = out;
+    const portalBurgs = world.burgs.filter((b) => b.portal);
+    expect(portalBurgs.length).toBe(15);
+
+    const portalMarkers = world.markers.filter((m) => m.type === 'portals');
+    expect(portalMarkers.length).toBe(15);
+    const markerCells = new Set(portalMarkers.map((m) => m.cell));
+    for (const b of portalBurgs) expect(markerCells.has(b.cell)).toBe(true);
+
+    const feeByTier = { city: 200, large_town: 150, town: 100, village: 50 };
+    for (const b of portalBurgs) {
+      expect(b.portal.feeGold).toBe(feeByTier[b.tier]);
+      expect(b.portal.name).toMatch(/Portal$/);
+    }
+    // Canon spot-checks: the great cities of a former age, not today's capitals.
+    expect(world.burgs.find((b) => b.name === 'Eralinde').portal.name).toBe('Nulgathun Portal');
+    expect(world.burgs.find((b) => b.name === 'Keboimrud').portal.feeGold).toBe(200);
+    expect(world.burgs.find((b) => b.name === 'Smovere').portal).toBeUndefined();
+  });
+
+  it('strips the legacy per-building teleport flags everywhere', () => {
+    for (const b of out.world.burgs) {
+      for (const bl of b.buildings) {
+        expect(bl.hasTeleportPortal).toBeUndefined();
+        expect(bl.portalFeeGold).toBeUndefined();
+      }
+    }
+  });
+
+  it('gives portal markers the canon fifteen-Ways legend', () => {
+    const portalMarkers = out.world.markers.filter((m) => m.type === 'portals');
+    for (const m of portalMarkers) {
+      expect(m.legend).toContain('fifteen ancient portals');
+      expect(m.name).toMatch(/Portal$/);
+    }
+  });
+
   it('repairs the unbalanced "Thyran (Wood Elf" culture name everywhere', () => {
     const thyran = out.world.cultures.find((c) => c.name.startsWith('Thyran'));
     expect(thyran.name).toBe('Thyran (Wood Elf)');

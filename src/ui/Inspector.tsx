@@ -34,7 +34,7 @@ function buildingLabel(b: SettlementBuilding): string {
     case 'craftsman': return `Craftsman — ${b.grade}${b.focus ? `, ${b.focus}` : ''}`;
     case 'shop': return `${b.name ?? 'Shop'} (${b.grade} shop)`;
     case 'adventure_guild':
-      return `Adventurers' guild${b.hasTeleportPortal ? ` — teleport portal, ${b.portalFeeGold} gold per traveler` : ''}`;
+      return "Adventurers' guild";
     case 'arena': return `Arena (${b.purpose}, seats ${b.capacity?.toLocaleString()})`;
     default: return b.type.replaceAll('_', ' ');
   }
@@ -92,6 +92,9 @@ function BurgCard({ burg }: { burg: Burg }) {
       <div className="kv"><span>Size</span><span>{burg.tier ?? burg.group} — {burg.population.toLocaleString()} souls</span></div>
       {flags && <div className="kv"><span>Status</span><span>{flags}</span></div>}
       {guildBranch && <div className="kv"><span>Guild</span><span>Adventurers' Guild — {GUILD_BRANCH_LABEL[guildBranch]}</span></div>}
+      {burg.portal && (
+        <div className="kv"><span>Portal</span><span>🌀 {burg.portal.name ?? 'Ancient portal'} — one of the fifteen Ways, tended by the Adventurers' Guild; {burg.portal.feeGold} gold per traveler</span></div>
+      )}
       {burg.religion && <div className="kv"><span>Faith</span><span>{burg.religion}</span></div>}
       {burg.landmarks.palace && (
         <div className="kv"><span>Seat</span><span>{burg.landmarks.palace.name} ({burg.landmarks.palace.kind}) — {burg.landmarks.palace.seatOf}</span></div>

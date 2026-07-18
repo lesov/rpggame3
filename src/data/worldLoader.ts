@@ -73,13 +73,13 @@ export function buildWorldData(geometry: Geometry, world: World, warsFile: WarsF
   // Ambient context: sizable settlements for weather/rumors; a burg for each
   // faith's center cell (for festivals).
   const ambientBurgs = worldWithPeople.burgs
-    .filter((b) => b.population >= 5000)
+    .filter((b) => b.population >= 5000 || b.portal)
     .map((b) => ({
       i: b.i,
       name: b.name,
       cell: b.cell,
       population: b.population,
-      hasPortal: b.buildings.some((bl) => bl.type === 'adventure_guild' && bl.hasTeleportPortal),
+      hasPortal: !!b.portal,
     }));
 
   const nearestBurgToCell = (cellId: number): number | undefined => {
