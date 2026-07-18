@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-18 - claude-fable-5 - feature/claude-fable-5/codex-gates-carried-word
+
+- Status: started
+- Summary: Add condensed in-game codex pages for the two new human-owned lore files (lepasoul_gates_codex.md, lepasoul_carried_word_codex.md): "The Gates" and "The Order of the Carried Word" as new CODEX_ENTRIES in src/lore/codex.ts, with alias links and registry tests. Keeper's Notes mechanics in those files are out of scope. Source .md files are read-only and stay uncommitted.
+- Files changed: src/lore/codex.ts (two new CODEX_ENTRIES: `the-gates` — Law of Passage, purge/gate-wan, gatehouse + hearth-credit, travel arithmetic, "what you are passes"; `carried-word` — Bearers, Fast of the Road, House of Memory, Second Tongue, ranks/word-names, Bearer's Peace/Silence, statue-litany closer; both ~5 paragraphs condensed from the human-owned source codices, Keeper's Notes mechanics deliberately excluded), src/lore/codex.test.ts (+5 tests: id/alias lookups for both entries, prose link tokenization for Bearer/Carried Word/the gates, cross-entry alias-collision guard), AGENT_CHANGELOG.md.
+- Tests run: `npx vitest run` — 272 tests / 35 files, all passed. `npx tsc -b` clean. `npm run build` passed. Headless Chromium: Codex tab lists all four entries; both new pages render title/subtitle/tags/body with zero console errors (screenshots in session scratchpad).
+- UI review: pending-human-test — open the Codex tab, read "The Gates" and "The Order of the Carried Word".
+- Blockers or coordination notes: New aliases ('the Ways', 'the gates', 'Bearer', …) auto-link from character-backstory text via tokenizeCodexLinks; alias regex is case-sensitive, hence paired case variants. Source .md files untouched and uncommitted. Dev server still on :5173.
+
 ## 2026-07-17 - claude-fable-5 - feature/claude-fable-5/portal-lore-15
 
 - Status: approved
