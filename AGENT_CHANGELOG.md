@@ -4,6 +4,15 @@ Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
 ## 2026-07-17 - claude-fable-5 - feature/claude-fable-5/portal-lore-15
 
+- Status: approved
+- Summary: Human approver tested the fifteen-portals UI and stated "my check passed, merge it" — explicit UI approval and merge authorization. Merging feature/claude-fable-5/portal-lore-15 into main locally with --no-ff.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 268 passed; `npx tsc -b` clean; `npm run build` passed (as of ready-for-review entry).
+- UI review: approved-by-human (2026-07-17)
+- Blockers or coordination notes: No release tag requested. Not pushing — per repo convention the human pushes main manually (SSH auth unavailable in this environment).
+
+## 2026-07-17 - claude-fable-5 - feature/claude-fable-5/portal-lore-15
+
 - Status: started
 - Summary: Lore retcon approved by human (plan agile-launching-lobster): exactly 15 portals — the map's `portals` markers — built centuries ago by the precursor of the Adventurer's Guild in the great cities of that era (many since faded); Guild maintains them ritually, none can build new ones; capitals no longer imply portals. Preprocess will derive portal placement from markers (overriding the 35 stale `hasTeleportPortal` flags in human-owned lepasoul.buildings.json, which stays untouched), fees by settlement tier (city 200 / large_town 150 / town 100 / village 50). Human explicitly approved editing untracked lepasoul_landmarks.md and lepasoul_1181_1281_campaign_bible.md (still never committed).
 - Files changed: tools/preprocess.mjs (+3 tests in tools/preprocess.test.mjs), src/data/types.ts (burg-level `portal?: {name, feeGold}`; removed SettlementBuilding.hasTeleportPortal/portalFeeGold), src/data/worldLoader.ts (hasPortal from burg.portal; portal burgs join ambient pool regardless of pop), src/ui/Inspector.tsx (dedicated Portal row on the burg card; guild building label loses portal suffix), src/lore/codex.ts (Ways rewritten to 15 ancient portals + new ritual-maintenance paragraph; Campfire "keeps the Rite of the Ways" instead of blessing new portals), src/lore/guild.ts (removed unused wayFee field/values; fixed Deretslav and Brinollu bios that claimed Ways in realms that no longer have one), data/events.timeline.json (1219 anchor: "portal caravan" → "Guild caravan"; Mememil has no portal), AGENT_CHANGELOG.md. Human-owned untracked files edited with explicit approval, NOT committed: lepasoul_landmarks.md (header count; 35-city fee list replaced by "The Fifteen Portals" with ancient portal names, hosts, realms, tier fees), lepasoul_1181_1281_campaign_bible.md (two Mememil portal-caravan phrases → Guild caravan).
