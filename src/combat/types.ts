@@ -5,7 +5,7 @@ import type { RollBreakdown } from './dice';
 
 export type DamageType =
   | 'slashing' | 'piercing' | 'bludgeoning'
-  | 'fire' | 'radiant' | 'psychic' | 'necrotic' | 'force';
+  | 'fire' | 'cold' | 'poison' | 'radiant' | 'psychic' | 'necrotic' | 'force';
 
 export type ExhaustionTier = 'fresh' | 'winded' | 'exhausted' | 'desperate';
 

@@ -30,6 +30,9 @@ export type ActorKind =
   | 'brigand'
   | 'goblinoid'
   | 'raider'
+  | 'fiend'
+  | 'elemental'
+  | 'fey'
   // peaceful-leaning
   | 'patrol'
   | 'merchant'
@@ -38,9 +41,11 @@ export type ActorKind =
   | 'refugee'
   | 'traveler';
 
-export const HOSTILE_LEANING: readonly ActorKind[] = ['beast', 'undead', 'brigand', 'goblinoid', 'raider'];
+export type WildernessLevel = 'settled' | 'frontier' | 'remote' | 'deepWild';
+
+export const HOSTILE_LEANING: readonly ActorKind[] = ['beast', 'undead', 'brigand', 'goblinoid', 'raider', 'fiend', 'elemental', 'fey'];
 /** Kinds that are sentient — reputation, diplomacy and faith move their mood. Beasts/undead don't care who you are. */
-export const SENTIENT_KINDS: readonly ActorKind[] = ['brigand', 'goblinoid', 'raider', 'patrol', 'merchant', 'pilgrim', 'hunter', 'refugee', 'traveler'];
+export const SENTIENT_KINDS: readonly ActorKind[] = ['brigand', 'goblinoid', 'raider', 'fiend', 'fey', 'patrol', 'merchant', 'pilgrim', 'hunter', 'refugee', 'traveler'];
 
 // ---------------------------------------------------------------------------
 // QUESTION 1 — frequency (λ). Actor-density inputs ONLY.

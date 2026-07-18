@@ -126,6 +126,7 @@ export function buildWaypoints(input: EncounterInput, steps: number): Waypoint[]
     const isWinter = season(dt.date, climate.lat) === 'Winter';
     const hourOfDay = hourAtFraction(start, activeMinutes, frac, plan.dayOnly);
     const marker = nearestHostileMarker(wd, x, y);
+    const burgDistance = nearestBurgMi(wd, x, y);
     const stateId = cell.state;
     const stateRec = stateId > 0 ? wd.stateById.get(stateId) : undefined;
 
@@ -137,7 +138,7 @@ export function buildWaypoints(input: EncounterInput, steps: number): Waypoint[]
       hourOfDay,
       isWinter,
       storm: isSevere(weather),
-      nearestBurgMi: nearestBurgMi(wd, x, y),
+      nearestBurgMi: burgDistance,
       marker: marker && marker.distanceMi <= 60 ? marker : undefined,
       war: warStatus(wd, stateId, dt.date.year),
       visibility: 1, // solo traveller for now
@@ -161,6 +162,7 @@ export function buildWaypoints(input: EncounterInput, steps: number): Waypoint[]
       biomeId: cell.biome,
       road,
       pop: cell.pop,
+      nearestBurgMi: burgDistance,
       night: hourOfDay >= 21 || hourOfDay < 5,
       isWinter,
       markerType: rate.marker && rate.marker.distanceMi <= 30 ? rate.marker.type : undefined,
@@ -191,7 +193,7 @@ export function rollTravelEncounters(input: EncounterInput): EncounterOutcome {
       const disp = wp.dispositionFor(kind);
       const chance = hostileChance(disp);
       const hostile = rand() < chance;
-      const actor = buildActor(kind, wp.table.biomeId, hostile, rand());
+      const actor = buildActor(kind, wp.table.biomeId, hostile, rand(), wp.table);
       return {
         kind: 'encounter',
         encounter: {
