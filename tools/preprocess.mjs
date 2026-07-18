@@ -128,10 +128,30 @@ export function build({ full, buildings, features, people }) {
   const populationRate = settings.populationRate;
   const urbanization = settings.urbanization;
 
+  // The Fifteen Portals: canon places a portal only where the map has a
+  // `portals` marker — each sits on a burg. The 35 `hasTeleportPortal` flags
+  // in the companion buildings file predate this canon and are stripped; the
+  // per-burg `portal` derived here is the single source of truth.
+  const portalByBurgId = new Map();
+  for (const m of pack.markers.filter((m) => m.type === 'portals')) {
+    const burgId = pack.cells[m.cell]?.burg;
+    if (!burgId) {
+      console.warn(`portal marker ${m.i} has no burg at cell ${m.cell}; skipped`);
+      continue;
+    }
+    portalByBurgId.set(burgId, { name: noteById.get(`marker${m.i}`)?.name });
+  }
+
+  const tierFromPopulation = (pop) =>
+    pop >= 20000 ? 'city' : pop >= 10000 ? 'large_town' : pop >= 5000 ? 'town' : 'village';
+  const portalFeeByTier = { city: 200, large_town: 150, town: 100, village: 50 };
+
   const burgs = pack.burgs
     .filter((b) => b && b.i && !b.removed)
     .map((b) => {
       const s = settlementByBurgId.get(b.i);
+      const population = s?.population ?? Math.round(b.population * populationRate * urbanization);
+      const portal = portalByBurgId.get(b.i);
       return {
         i: b.i,
         name: b.name,
@@ -149,11 +169,14 @@ export function build({ full, buildings, features, people }) {
         temple: !!b.temple,
         plaza: !!b.plaza,
         shanty: !!b.shanty,
-        population: s?.population ?? Math.round(b.population * populationRate * urbanization),
+        population,
         tier: s?.tier,
         religion: s?.religion,
-        buildings: s?.buildings ?? [],
+        buildings: (s?.buildings ?? []).map(({ hasTeleportPortal, portalFeeGold, ...bl }) => bl),
         landmarks: s?.landmarks ?? {},
+        portal: portal
+          ? { name: portal.name, feeGold: portalFeeByTier[s?.tier ?? tierFromPopulation(population)] }
+          : undefined,
       };
     });
 
@@ -234,6 +257,14 @@ export function build({ full, buildings, features, people }) {
     points: r.points.map(([x, y]) => [r1(x), r1(y)]),
   }));
 
+  // The raw export's portal notes carry a generic Azgaar legend; replace it
+  // with the canon lore (see src/lore/codex.ts, "The Ways").
+  const PORTAL_LEGEND =
+    'One of the fifteen ancient portals of Lepasoul, raised many centuries ago in what was ' +
+    'then one of the great cities of the world by the wandering company that would in time ' +
+    "become the Adventurer's Guild. The Guild tends it still — by rite and rote, exactly as " +
+    'taught — for none now living know how such a thing is made.';
+
   const markers = pack.markers.map((m) => {
     const note = noteById.get(`marker${m.i}`);
     return {
@@ -244,7 +275,7 @@ export function build({ full, buildings, features, people }) {
       y: r1(m.y),
       cell: m.cell,
       name: note?.name,
-      legend: note?.legend,
+      legend: m.type === 'portals' ? PORTAL_LEGEND : note?.legend,
     };
   });
 
