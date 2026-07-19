@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatDate, formatTime24 } from '../sim/calendar';
-import { defaultTravelModeFor, nearbyTravelDestinations, planTravel, roadRouteFor, type TravelMode } from '../player/travel';
+import {
+  boatFareVosels,
+  defaultTravelModeFor,
+  nearbyTravelDestinations,
+  planTravel,
+  roadRouteFor,
+  seaPortDestinations,
+  type TravelMode,
+} from '../player/travel';
+import { voselsOf } from '../economy/money';
 import { legDangerBreakdown } from '../travel/encounter/run';
 import { useGame } from './store';
 
@@ -37,13 +46,21 @@ export function TravelPanel() {
     () => (player ? nearbyTravelDestinations(wd, player) : []),
     [wd, player],
   );
+  const seaDestinations = useMemo(
+    () => (player ? seaPortDestinations(wd, player) : []),
+    [wd, player],
+  );
+  const allDestinations = useMemo(
+    () => [...destinations, ...seaDestinations.filter((s) => !destinations.some((d) => d.cellId === s.cellId))],
+    [destinations, seaDestinations],
+  );
 
   useEffect(() => {
     if (!selectedId && destinations[0]) setSelectedId(destinations[0].id);
-    else if (selectedId && !destinations.some((d) => d.id === selectedId)) setSelectedId(destinations[0]?.id ?? null);
-  }, [destinations, selectedId]);
+    else if (selectedId && !allDestinations.some((d) => d.id === selectedId)) setSelectedId(destinations[0]?.id ?? null);
+  }, [destinations, allDestinations, selectedId]);
 
-  const selected = destinations.find((d) => d.id === selectedId) ?? destinations[0];
+  const selected = allDestinations.find((d) => d.id === selectedId) ?? destinations[0];
   const roadAvailable = useMemo(() => {
     if (!player || !selected) return false;
     return Boolean(roadRouteFor(wd, player.location, selected));
@@ -69,7 +86,8 @@ export function TravelPanel() {
 
   useEffect(() => {
     if (!selected) return;
-    setMode(defaultTravelModeFor(selected, roadAvailable));
+    // Sea-passage picks always sail; everything else falls back to the default.
+    setMode(selected.id.startsWith('sea-') ? 'boat' : defaultTravelModeFor(selected, roadAvailable));
   }, [selected?.id, roadAvailable]);
 
   useEffect(() => {
@@ -94,7 +112,7 @@ export function TravelPanel() {
   }, [wd, player, selected, mode, roadAvailable, dayOnly, state.time]);
 
   const danger = useMemo(() => {
-    if (!player || !plan) return null;
+    if (!player || !plan || plan.mode === 'boat') return null;
     return legDangerBreakdown({ wd, player, plan, start: { date: state.date, time: state.time }, pacing: state.pacing, seed: 0 });
   }, [wd, player, plan, state.date, state.time, state.pacing]);
   const [showCalc, setShowCalc] = useState(false);
@@ -133,6 +151,31 @@ export function TravelPanel() {
           ))}
         </div>
       </div>
+
+      {seaDestinations.length > 0 && (
+        <div className="section">
+          <h3>Sea passage</h3>
+          <div className="small-note">
+            Book passage on a sailing ship to any port within 250 miles — 2 mph, day and night, no encounters at sea. Fare: 10 vosels + 2 per mile.
+          </div>
+          <div className="travel-destination-list sea-passage-list">
+            {seaDestinations.map((dest) => (
+              <button
+                key={dest.id}
+                className={selected?.id === dest.id ? 'travel-destination active' : 'travel-destination'}
+                onClick={() => {
+                  setSelectedId(dest.id);
+                  setMode('boat');
+                }}
+              >
+                <span>{dest.icon ?? '⚓'}</span>
+                <strong>{dest.name}</strong>
+                <em>{Math.round(dest.distanceMi)} mi · fare {boatFareVosels(dest.distanceMi * 1.25)} vosels</em>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {selected && plan && (
         <>
@@ -173,6 +216,18 @@ export function TravelPanel() {
             <div className="kv"><span>Distance</span><span>{distanceSummary(plan)}</span></div>
             <div className="kv"><span>Travel time</span><span>{formatDuration(plan.elapsedMinutes)} elapsed · {plan.travelHours.toFixed(1)} {plan.activeTravelLabel}</span></div>
             <div className="kv"><span>Pace</span><span>{plan.paceDetail}</span></div>
+            {plan.mode === 'boat' && plan.fareVosels !== undefined && (
+              <>
+                <div className={voselsOf(player) < plan.fareVosels ? 'kv warn' : 'kv'}>
+                  <span>Fare</span>
+                  <span>{plan.fareVosels} vosels ({voselsOf(player)} carried)</span>
+                </div>
+                <div className="kv" data-testid="danger-read">
+                  <span>Road danger</span>
+                  <span><span className="danger-badge safe">Safe passage</span> no encounters at sea</span>
+                </div>
+              </>
+            )}
             {danger && (
               <>
                 <div className="kv" data-testid="danger-read">
@@ -223,8 +278,14 @@ export function TravelPanel() {
             )}
           </div>
 
-          <button className="primary-action" onClick={() => dispatch({ type: 'travel', plan })}>
-            Travel to {selected.name}
+          <button
+            className="primary-action"
+            disabled={plan.fareVosels !== undefined && voselsOf(player) < plan.fareVosels}
+            onClick={() => dispatch({ type: 'travel', plan })}
+          >
+            {plan.fareVosels !== undefined && voselsOf(player) < plan.fareVosels
+              ? `Need ${plan.fareVosels} vosels for passage`
+              : `Travel to ${selected.name}`}
           </button>
         </>
       )}

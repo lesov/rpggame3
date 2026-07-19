@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/travel-sea-passage
+
+- Status: approved
+- Summary: Human approver tested the travel fixes (encounter-marker removal, segmented-road joining, capped/cheapened sea passage) and stated "my check passed, merge it" — explicit UI approval and merge authorization. Merging feature/claude-fable-5/travel-sea-passage into main locally with --no-ff.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 311 passed; `npx tsc -b` clean; `npm run build` passed (as of ready-for-review entry).
+- UI review: approved-by-human (2026-07-19)
+- Blockers or coordination notes: No release tag requested. Not pushing — human pushes main manually.
+
+## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/travel-sea-passage
+
+- Status: ready-for-review
+- Summary: Follow-up fixes from human review of the sea-passage branch: (1) road detection now unions Azgaar's segmented roads into connected networks (grid-hash union-find over near-shared points, cached per world) so a leg like Sterzhkov→Mememil served by different segments of the same road counts as road travel again — the removed encounter marker had been acting as an accidental waypoint joining the two segments; mixed road/trail chains use trail speed; (2) sea-passage list capped at ports within 250 miles; (3) fare lowered to 10 vosels + 2/mile.
+- Files changed: src/player/travel.ts (roadComponents union-find + component-aware roadRouteFor; SEA_PASSAGE_RANGE_MI=250 filter in seaPortDestinations; BOAT_FARE_VOSELS_PER_MILE=2), src/ui/TravelPanel.tsx (help text), src/player/travel.test.ts (+4: segment-chain joins, disconnected segments stay apart, mixed chain uses trails, real-data Sterzhkov–Mememil road found; fare/range expectations updated), AGENT_CHANGELOG.md.
+- Tests run: `npx vitest run` — 311 tests / 40 files, all passed. `npx tsc -b` clean. `npm run build` passed. Headless Chromium re-run at Domasalyesi: 11/11 checks — Kethlin (292 mi) no longer listed, help text shows 250-mile/2-per-mile terms, Oladar fare now 476 (was 709), sails and arrives with exact deduction, no interruptions, zero console errors.
+- UI review: pending-human-test — re-check a road leg between towns on the same (segmented) road, and the trimmed/cheaper sea list from a port.
+- Blockers or coordination notes: none.
+
+## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/travel-sea-passage
+
+- Status: started
+- Summary: Travel fixes per approved plan: (1) `encounters`-type map markers no longer appear as travel destinations (reserved for future road chance-encounters; other marker types stay travelable); (2) port-to-port sea passage — from any port the player can sail to any other port at D&D sailing-ship speed (2 mph, day and night), fare 10 vosels + 3/mile, boat legs never roll encounters.
+- Files changed: src/player/travel.ts (isPointDestination excludes `encounters` markers; SAILING_SHIP_MPH=2 replaces BOAT_MPH=5; boatFareVosels = 10 + 3/mile; TravelPlan.fareVosels; boatReachable no longer requires land-unreachable; new seaPortDestinations lists every other port from a port; old 900-mi/8-port back-fill removed), src/ui/store.tsx (runTravelLeg: boat legs deduct the fare via spendVosels, refuse when the purse is short, and skip rollTravelEncounters entirely), src/ui/TravelPanel.tsx (Sea passage section with per-port fares; boat readouts: Fare row with purse, "Safe passage — no encounters at sea"; travel button disabled/"Need N vosels" when short; sea picks pin boat mode), src/ui/styles.css (.sea-passage-list scroll), src/player/travel.test.ts (+4 tests, reworked 3 for the redesign), src/ui/store.test.ts (boat leg: fare deducted / arrival / no interception / blocked unpaid), AGENT_CHANGELOG.md.
+- Tests run: `npx vitest run` — 307 tests / 40 files, all passed. `npx tsc -b` clean. `npm run build` passed. Headless Chromium (save injected with player at Domasalyesi port, 5000 vosels): Sea passage section lists ports sorted by distance with fares (Elethsana 35 mi/140v … Oladar 186 mi/709v), boat plan shows 2.0 mph day-and-night pace + Fare row + Safe-passage badge, traveling to Oladar advances 4d 21h, arrives with exactly fare deducted (5000→4291), no encounter/combat interruption; 9/9 checks, zero console errors (screenshots in scratchpad).
+- UI review: pending-human-test — stand in a port town, open Travel: check the Sea passage list/fares, sail somewhere; also confirm "encounter" markers no longer appear among destinations.
+- Blockers or coordination notes: `encounters` markers reserved for future road chance-encounters per human decision. Fare rate (10 + 3/mile) is the human's custom economy choice. Dev server on :5173.
+
 ## 2026-07-19 10:51 CDT - codex - main
 
 - Status: merged

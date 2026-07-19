@@ -24,7 +24,7 @@ import type { CombatState } from '../combat/types';
 import { createCombat, initialPendingRoll, potionsRemainingById } from '../combat/engine';
 import { generateLoot, type LootItem } from '../combat/loot';
 import { getCatalogItem } from '../economy/catalog';
-import { addItem } from '../economy/money';
+import { addItem, spendVosels, voselsOf } from '../economy/money';
 import { shopsForBurg, travellingTraderShop, type Shop } from '../economy/shops';
 import { buyItem as buyFromShop, sellItem as sellToShop, equipItem as equipInventory, unequipItem as unequipInventory } from '../economy/transaction';
 import { getMonster, defaultOpponentFor } from '../combat/monsters';
@@ -372,18 +372,29 @@ function consumeProvisions(player: PlayerCharacter, amount: number): PlayerChara
  * encounter modal.
  */
 function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameState {
-  const player = state.player;
+  let player = state.player;
   if (!player) return state;
+
+  // Sea passage: paid, and never interrupted — no encounters at sea.
+  const isBoat = plan.mode === 'boat';
+  if (isBoat) {
+    const fare = plan.fareVosels ?? 0;
+    if (voselsOf(player) < fare) return state;
+    player = spendVosels(player, fare);
+  }
+
   const worldSeed = Number(wd.geometry.seed) || 0;
   const seed = hash(worldSeed, state.ord, minuteOfDayOf(state.time), player.location.cellId, plan.destination.cellId);
-  const outcome = rollTravelEncounters({
-    wd,
-    player,
-    plan,
-    start: { date: state.date, time: state.time },
-    pacing: state.pacing,
-    seed,
-  });
+  const outcome = isBoat
+    ? ({ kind: 'clear' } as const)
+    : rollTravelEncounters({
+        wd,
+        player,
+        plan,
+        start: { date: state.date, time: state.time },
+        pacing: state.pacing,
+        seed,
+      });
 
   if (outcome.kind === 'clear') {
     const advanced = advanceClock(wd, state, plan.elapsedMinutes);

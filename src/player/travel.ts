@@ -39,6 +39,8 @@ export interface TravelPlan {
   provisionsNeeded: number;
   provisionsAvailable: number;
   insufficientProvisions: boolean;
+  /** Passage fee in vosels; set only for boat legs. */
+  fareVosels?: number;
   summary: string;
 }
 
@@ -53,12 +55,21 @@ export function defaultTravelModeFor(destination: TravelDestination, roadAvailab
 const ROAD_ACCESS_MI = 20;
 const ROAD_MPH = 3.2;
 const TRAIL_MPH = 2.7;
-const BOAT_MPH = 5;
+/** D&D sailing ship: 2 mph, sailing day and night (48 miles per day). */
+const SAILING_SHIP_MPH = 2;
 const OFFROAD_BASE_MPH = 2.1;
 const DAYLIGHT_START = 6;
 const DAYLIGHT_END = 18;
-const BOAT_PORT_RADIUS_MI = 900;
-const BOAT_PORT_LIMIT = 8;
+
+export const BOAT_FARE_BASE_VOSELS = 10;
+export const BOAT_FARE_VOSELS_PER_MILE = 2;
+/** Ports beyond this direct distance are not offered for passage. */
+export const SEA_PASSAGE_RANGE_MI = 250;
+
+/** Passage fare on a crewed ship: base price plus a per-mile rate. */
+export function boatFareVosels(distanceMi: number): number {
+  return BOAT_FARE_BASE_VOSELS + Math.round(BOAT_FARE_VOSELS_PER_MILE * distanceMi);
+}
 
 const BIOME_MULTIPLIER: Record<string, number> = {
   Marine: 3,
@@ -113,19 +124,101 @@ function canTravelByBoat(wd: WorldData, player: PlayerCharacter, item: NearbyIte
 }
 
 function isPointDestination(item: NearbyItem): item is NearbyItem & { kind: TravelDestinationKind } {
-  return item.kind === 'burg' || item.kind === 'marker';
+  // Random-encounter markers are not places to travel to — they exist to fuel
+  // chance encounters on the road. Every other marker kind stays a destination.
+  if (item.kind === 'marker') return item.marker?.type !== 'encounters';
+  return item.kind === 'burg';
+}
+
+/**
+ * Azgaar splits one continuous road into many segments that meet at shared
+ * junction points. Travel must treat a chain of connected segments as a single
+ * road network, or a leg between two towns served by different segments of the
+ * same road would wrongly fall back to off-road. Union segments whose points
+ * (nearly) touch into components, cached per world.
+ */
+const ROAD_JOIN_EPS_MI = 3;
+const roadComponentCache = new WeakMap<WorldData, Map<number, number>>();
+
+function roadComponents(wd: WorldData): Map<number, number> {
+  const cached = roadComponentCache.get(wd);
+  if (cached) return cached;
+
+  const roads = wd.world.routes.filter((r) => r.group === 'roads' || r.group === 'trails');
+  const parent = new Map<number, number>(roads.map((r) => [r.i, r.i]));
+  const find = (i: number): number => {
+    let root = i;
+    while (parent.get(root) !== root) root = parent.get(root)!;
+    let cur = i;
+    while (cur !== root) {
+      const next = parent.get(cur)!;
+      parent.set(cur, root);
+      cur = next;
+    }
+    return root;
+  };
+  const union = (a: number, b: number) => parent.set(find(a), find(b));
+
+  // Grid-hash every point; segments sharing a cell (or an adjacent one) join.
+  const cellSizeMap = ROAD_JOIN_EPS_MI / wd.geometry.distanceScale;
+  const grid = new Map<string, number[]>();
+  for (const route of roads) {
+    for (const [x, y] of route.points) {
+      const gx = Math.floor(x / cellSizeMap);
+      const gy = Math.floor(y / cellSizeMap);
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const key = `${gx + dx},${gy + dy}`;
+          const bucket = grid.get(key);
+          if (dx === 0 && dy === 0) {
+            if (bucket) {
+              for (const other of bucket) union(route.i, other);
+              if (!bucket.includes(route.i)) bucket.push(route.i);
+            } else {
+              grid.set(key, [route.i]);
+            }
+          } else if (bucket) {
+            for (const other of bucket) union(route.i, other);
+          }
+        }
+      }
+    }
+  }
+
+  const components = new Map<number, number>(roads.map((r) => [r.i, find(r.i)]));
+  roadComponentCache.set(wd, components);
+  return components;
 }
 
 export function roadRouteFor(wd: WorldData, from: { x: number; y: number }, to: { x: number; y: number }) {
+  const components = roadComponents(wd);
+  type End = { component: number; group: 'roads' | 'trails'; accessMi: number };
+  const nearestByComponent = (x: number, y: number): Map<number, End> => {
+    const best = new Map<number, End>();
+    for (const route of wd.world.routes) {
+      if (route.group !== 'roads' && route.group !== 'trails') continue;
+      const accessMi = minDistanceToRouteMi(wd, route, x, y);
+      if (accessMi > ROAD_ACCESS_MI) continue;
+      const component = components.get(route.i)!;
+      const cur = best.get(component);
+      if (!cur || accessMi < cur.accessMi || (accessMi === cur.accessMi && route.group === 'roads')) {
+        best.set(component, { component, group: route.group, accessMi });
+      }
+    }
+    return best;
+  };
+
+  const fromEnds = nearestByComponent(from.x, from.y);
+  const toEnds = nearestByComponent(to.x, to.y);
   let best: { group: 'roads' | 'trails'; accessMi: number } | null = null;
-  for (const route of wd.world.routes) {
-    if (route.group !== 'roads' && route.group !== 'trails') continue;
-    const fromAccess = minDistanceToRouteMi(wd, route, from.x, from.y);
-    const toAccess = minDistanceToRouteMi(wd, route, to.x, to.y);
-    if (fromAccess > ROAD_ACCESS_MI || toAccess > ROAD_ACCESS_MI) continue;
-    const accessMi = fromAccess + toAccess;
-    if (!best || accessMi < best.accessMi || (accessMi === best.accessMi && route.group === 'roads')) {
-      best = { group: route.group, accessMi };
+  for (const [component, fromEnd] of fromEnds) {
+    const toEnd = toEnds.get(component);
+    if (!toEnd) continue;
+    const accessMi = fromEnd.accessMi + toEnd.accessMi;
+    // Travel is only as fast as the slower class touched at either end.
+    const group = fromEnd.group === 'roads' && toEnd.group === 'roads' ? 'roads' : 'trails';
+    if (!best || accessMi < best.accessMi || (accessMi === best.accessMi && group === 'roads')) {
+      best = { group, accessMi };
     }
   }
   return best;
@@ -222,7 +315,6 @@ function destinationFromNearby(item: NearbyItem & { kind: TravelDestinationKind 
 
 export function nearbyTravelDestinations(wd: WorldData, player: PlayerCharacter, radiusMi = 120, limit = 12): TravelDestination[] {
   const originCellId = player.location.cellId;
-  const originPort = nearestPort(wd, player.location.x, player.location.y);
   const seen = new Set<string>();
   const out: TravelDestination[] = [];
   const radii = [radiusMi, 180, 260, 400, 650].filter((r, i, arr) => r >= radiusMi && arr.indexOf(r) === i);
@@ -237,7 +329,7 @@ export function nearbyTravelDestinations(wd: WorldData, player: PlayerCharacter,
     })) {
       const cellId = item.cellId!;
       const land = landReachable(wd, originCellId, cellId);
-      const boat = !land && canTravelByBoat(wd, player, item);
+      const boat = canTravelByBoat(wd, player, item);
       if (!land && !boat) continue;
       const key = destinationKey(item.kind, cellId, item.name);
       if (seen.has(key)) continue;
@@ -278,39 +370,37 @@ export function nearbyTravelDestinations(wd: WorldData, player: PlayerCharacter,
     if (out.length >= Math.max(2, limit)) break;
   }
 
-  if (originPort) {
-    for (const { burg, distanceMi } of burgsByDistance) {
-      if (!burg.port || burg.i === originPort.burgId || distanceMi > BOAT_PORT_RADIUS_MI) continue;
-      const land = landReachable(wd, originCellId, burg.cell);
-      if (land) continue;
-      const key = destinationKey('burg', burg.cell, burg.name);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({
-        id: `burg-${burg.cell}-${out.length}`,
+  return out.sort((a, b) => a.distanceMi - b.distanceMi).slice(0, limit);
+}
+
+/**
+ * Sea passage: from a port settlement the player can book passage to any
+ * other port on the map. Empty when the player is not at a port.
+ */
+export function seaPortDestinations(wd: WorldData, player: PlayerCharacter): TravelDestination[] {
+  const originPort = nearestPort(wd, player.location.x, player.location.y);
+  if (!originPort) return [];
+  const originCellId = player.location.cellId;
+  return wd.world.burgs
+    .filter((burg) => burg.port && burg.i !== originPort.burgId)
+    .map((burg) => ({ burg, distanceMi: pointDistanceMi(wd, player.location.x, player.location.y, burg.x, burg.y) }))
+    .filter(({ distanceMi }) => distanceMi <= SEA_PASSAGE_RANGE_MI)
+    .map(({ burg, distanceMi }) => {
+      return {
+        id: `sea-${burg.cell}`,
         name: burg.name,
-        detail: `${burg.tier ?? 'settlement'}, port · pop ${burg.population.toLocaleString()} · port passage`,
-        kind: 'burg',
+        detail: `${burg.tier ?? 'settlement'}${burg.capital ? ', capital' : ''}, port · pop ${burg.population.toLocaleString()} · sea passage`,
+        kind: 'burg' as const,
         icon: burg.capital ? '👑' : '⚓',
         x: burg.x,
         y: burg.y,
         cellId: burg.cell,
         distanceMi,
-        landReachable: false,
+        landReachable: landReachable(wd, originCellId, burg.cell),
         boatReachable: true,
-      });
-    }
-  }
-
-  const landDestinations = out
-    .filter((d) => !d.boatReachable)
-    .sort((a, b) => a.distanceMi - b.distanceMi)
-    .slice(0, limit);
-  const boatDestinations = out
-    .filter((d) => d.boatReachable)
-    .sort((a, b) => a.distanceMi - b.distanceMi)
-    .slice(0, originPort ? BOAT_PORT_LIMIT : 0);
-  return [...landDestinations, ...boatDestinations].sort((a, b) => a.distanceMi - b.distanceMi);
+      };
+    })
+    .sort((a, b) => a.distanceMi - b.distanceMi);
 }
 
 export function planTravel(
@@ -339,7 +429,7 @@ export function planTravel(
   const mph = (effectiveMode === 'road' && route
     ? route.group === 'roads' ? ROAD_MPH : TRAIL_MPH
     : effectiveMode === 'boat'
-      ? BOAT_MPH
+      ? SAILING_SHIP_MPH
     : OFFROAD_BASE_MPH / biomeMultiplier) * loadFactor;
   const travelDayOnly = effectiveMode === 'boat' ? false : dayOnly;
   const travelHours = distanceMi / mph;
@@ -354,8 +444,9 @@ export function planTravel(
       ? roadLabel
     : 'Off-road walking';
   const loadNote = loadFactor < 0.999 ? `, ${loadFactor.toFixed(2)}x under load` : '';
+  const fareVosels = effectiveMode === 'boat' ? boatFareVosels(distanceMi) : undefined;
   const paceDetail = effectiveMode === 'boat'
-    ? `${paceLabel}, ${mph.toFixed(1)} mph average; sails day and night`
+    ? `${paceLabel}, ${mph.toFixed(1)} mph average; sails day and night; no encounters at sea`
     : effectiveMode === 'road' && route
       ? `${paceLabel}, ${mph.toFixed(1)} mph average${loadNote}`
     : `${paceLabel}, ${mph.toFixed(1)} mph after ${biomeMultiplier.toFixed(2)}x terrain${loadNote}`;
@@ -384,6 +475,9 @@ export function planTravel(
     provisionsNeeded: needed,
     provisionsAvailable: available,
     insufficientProvisions: available < needed,
-    summary: `${Math.round(distanceMi)} mi ${modeLabel}; ${Math.ceil(elapsedMinutes / 60)} elapsed hours`,
+    fareVosels,
+    summary:
+      `${Math.round(distanceMi)} mi ${modeLabel}; ${Math.ceil(elapsedMinutes / 60)} elapsed hours` +
+      (fareVosels !== undefined ? `; fare ${fareVosels} vosels` : ''),
   };
 }

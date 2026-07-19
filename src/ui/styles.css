@@ -491,6 +491,7 @@ button.active { background: var(--accent-2); border-color: var(--accent-2); colo
   flex-direction: column;
   gap: 6px;
 }
+.sea-passage-list { max-height: 260px; overflow-y: auto; }
 .travel-destination {
   display: grid;
   grid-template-columns: 20px 1fr;
