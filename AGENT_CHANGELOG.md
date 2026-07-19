@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/quest-burned-hall
+
+- Status: approved
+- Summary: Human approver tested the burned-hall quest finale in the UI and stated "my check passed, merge it" — explicit UI approval and merge authorization. Merging feature/claude-fable-5/quest-burned-hall into main locally with --no-ff.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 295 passed; `npx tsc -b` clean; `npm run build` passed (as of ready-for-review entry).
+- UI review: approved-by-human (2026-07-19)
+- Blockers or coordination notes: No release tag requested. Not pushing — human pushes main manually. Stabilize-quest concrete objectives still to be specified by the human (single open step for now).
+
 ## 2026-07-18 - claude-fable-5 - feature/claude-fable-5/quest-burned-hall
 
 - Status: started
