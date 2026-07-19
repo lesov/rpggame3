@@ -4,6 +4,15 @@ Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
 ## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/travel-sea-passage
 
+- Status: approved
+- Summary: Human approver tested the travel fixes (encounter-marker removal, segmented-road joining, capped/cheapened sea passage) and stated "my check passed, merge it" — explicit UI approval and merge authorization. Merging feature/claude-fable-5/travel-sea-passage into main locally with --no-ff.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 311 passed; `npx tsc -b` clean; `npm run build` passed (as of ready-for-review entry).
+- UI review: approved-by-human (2026-07-19)
+- Blockers or coordination notes: No release tag requested. Not pushing — human pushes main manually.
+
+## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/travel-sea-passage
+
 - Status: ready-for-review
 - Summary: Follow-up fixes from human review of the sea-passage branch: (1) road detection now unions Azgaar's segmented roads into connected networks (grid-hash union-find over near-shared points, cached per world) so a leg like Sterzhkov→Mememil served by different segments of the same road counts as road travel again — the removed encounter marker had been acting as an accidental waypoint joining the two segments; mixed road/trail chains use trail speed; (2) sea-passage list capped at ports within 250 miles; (3) fare lowered to 10 vosels + 2/mile.
 - Files changed: src/player/travel.ts (roadComponents union-find + component-aware roadRouteFor; SEA_PASSAGE_RANGE_MI=250 filter in seaPortDestinations; BOAT_FARE_VOSELS_PER_MILE=2), src/ui/TravelPanel.tsx (help text), src/player/travel.test.ts (+4: segment-chain joins, disconnected segments stay apart, mixed chain uses trails, real-data Sterzhkov–Mememil road found; fare/range expectations updated), AGENT_CHANGELOG.md.
