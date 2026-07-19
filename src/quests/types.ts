@@ -3,7 +3,9 @@ import type { PlayerLocation } from '../player/types';
 
 export type QuestStatus = 'active' | 'completed' | 'failed';
 export type QuestStepStatus = 'active' | 'pending' | 'completed';
-export type CourierQuestPhase = 'deliver-letter' | 'wait-for-response' | 'return-response';
+export type CourierQuestPhase = 'deliver-letter' | 'wait-for-response' | 'return-response' | 'ruins-inspected';
+export type StabilizeQuestPhase = 'seminol-arriving';
+export type QuestPhase = CourierQuestPhase | StabilizeQuestPhase;
 
 export interface QuestStep {
   id: string;
@@ -16,7 +18,7 @@ export interface Quest {
   id: string;
   title: string;
   status: QuestStatus;
-  phase?: CourierQuestPhase;
+  phase?: QuestPhase;
   giverName: string;
   giverRole: string;
   origin: PlayerLocation;

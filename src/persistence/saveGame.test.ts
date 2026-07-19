@@ -59,6 +59,20 @@ describe('save serialization', () => {
     expect(back.prev).toEqual(back.price);
   });
 
+  it('round-trips the guild-hall fire and defaults it for pre-fire saves', () => {
+    const state = {
+      ...initialState(wd),
+      guildHallFire: { cellId: 42, burgId: 7, placeName: 'Testholm', date: initialState(wd).date },
+    };
+    const env = serializeGame(state, wd);
+    expect(deserializeGame(env, wd)!.guildHallFire).toEqual(state.guildHallFire);
+
+    // A save written before the fire feature existed has no such field.
+    const legacy = { ...env, state: { ...env.state } } as typeof env;
+    delete (legacy.state as Partial<typeof legacy.state>).guildHallFire;
+    expect(deserializeGame(legacy, wd)!.guildHallFire).toBeNull();
+  });
+
   it('fills save metadata from the world/date', () => {
     const state = initialState(wd);
     const env = serializeGame(state, wd);

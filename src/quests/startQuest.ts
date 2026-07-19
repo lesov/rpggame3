@@ -75,7 +75,7 @@ export function createStartingQuest(wd: WorldData, origin: PlayerLocation, chara
     status: 'active',
     phase: 'deliver-letter',
     giverName,
-    giverRole: `Head of the Adventurers' Guild in ${origin.placeName}`,
+    giverRole: `Flame-Commander of the Adventurers' Guild hall in ${origin.placeName}`,
     origin,
     destination,
     targetName,

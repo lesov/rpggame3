@@ -194,6 +194,47 @@ describe('game clock state', () => {
     expect(s.player?.inventory.find((item) => item.id === 'guild-response-letter')?.note).toContain(quest.origin.placeName);
   });
 
+  it('runs the burned-hall aftermath: fire state, feed entry, completion, and the stabilize quest', () => {
+    const reducer = makeReducer(wd);
+    const pc = makeTestCharacter('fighter');
+    const quest = pc.quests[0];
+    let s = reducer(initialState(wd), {
+      type: 'setPlayer',
+      player: {
+        ...pc,
+        location: quest.destination,
+        inventory: [
+          ...pc.inventory,
+          { id: 'sealed-guild-letter', name: 'Sealed guild letter', quantity: 1, category: 'quest' as const },
+        ],
+      },
+    });
+    s = reducer(s, { type: 'deliverQuestLetter', questId: quest.id });
+    s = reducer(s, { type: 'waitForQuestResponse', questId: quest.id });
+
+    // Blocked until the player is back at the origin.
+    expect(reducer(s, { type: 'inspectGuildRuins', questId: quest.id })).toBe(s);
+
+    s = { ...s, player: { ...s.player!, location: quest.origin } };
+    s = reducer(s, { type: 'inspectGuildRuins', questId: quest.id });
+    expect(s.player?.quests[0].phase).toBe('ruins-inspected');
+    expect(s.guildHallFire).not.toBeNull();
+    expect(s.guildHallFire?.cellId).toBe(quest.origin.cellId);
+    expect(s.feed[0].id).toBe('guild-hall-fire');
+    expect(s.feed[0].title).toContain(s.guildHallFire!.placeName);
+
+    s = reducer(s, { type: 'speakToSemina', questId: quest.id });
+    expect(s.player?.quests[0].status).toBe('completed');
+
+    s = reducer(s, { type: 'meetEmgerdas' });
+    const stabilize = s.player?.quests.find((q) => q.id === 'stabilize-guild-branch');
+    expect(stabilize?.status).toBe('active');
+    expect(stabilize?.phase).toBe('seminol-arriving');
+
+    s = reducer(s, { type: 'meetSeminol', questId: 'stabilize-guild-branch' });
+    expect(s.player?.quests.find((q) => q.id === 'stabilize-guild-branch')?.phase).toBeUndefined();
+  });
+
   it('claims victory loot once and adds it to inventory', () => {
     const reducer = makeReducer(wd);
     const player = makeTestCharacter('fighter');

@@ -34,7 +34,15 @@ import { initEconomy, worldTick, weekOf, type EconomyState } from '../trade/econ
 import { rollTravelEncounters } from '../travel/encounter/run';
 import { initialPacing, advancePacing, resetPacing, type PacingState } from '../travel/encounter/pacing';
 import type { TravelEncounter } from '../travel/encounter/types';
-import { deliverCourierLetter, receiveCourierResponse, responseWaitRemainingMinutes } from '../quests/progression';
+import {
+  deliverCourierLetter,
+  inspectGuildRuins,
+  meetSeminol,
+  receiveCourierResponse,
+  responseWaitRemainingMinutes,
+  speakToSemina,
+  startStabilizeQuest,
+} from '../quests/progression';
 
 export type Speed = 'hour' | 'day' | 'week';
 export const SPEED_MINUTES: Record<Speed, number> = { hour: 60, day: MINUTES_PER_DAY, week: 7 * MINUTES_PER_DAY };
@@ -94,8 +102,17 @@ export interface GameState {
   selectedCodexId: string | null;
   shop: ShopSession | null;
   pendingLoot: PendingLoot | null;
+  /** Set once the player discovers their home guild hall burned down. */
+  guildHallFire: GuildHallFire | null;
   /** World trade economy — market prices that move as the clock advances. */
   economy: EconomyState;
+}
+
+export interface GuildHallFire {
+  cellId: number;
+  burgId?: number;
+  placeName: string;
+  date: GameDate;
 }
 
 /** An open shopping visit: the vendors present and which one is showing. */
@@ -140,6 +157,10 @@ export type GameAction =
   | { type: 'setTravelTarget'; target: TravelTargetPreview | null }
   | { type: 'deliverQuestLetter'; questId: string }
   | { type: 'waitForQuestResponse'; questId: string }
+  | { type: 'inspectGuildRuins'; questId: string }
+  | { type: 'speakToSemina'; questId: string }
+  | { type: 'meetEmgerdas' }
+  | { type: 'meetSeminol'; questId: string }
   | { type: 'travel'; plan: TravelPlan }
   | { type: 'resumeTravel' }
   | { type: 'attackEncounter' }
@@ -297,6 +318,7 @@ export function initialState(wd: WorldData): GameState {
     selectedCodexId: null,
     shop: null,
     pendingLoot: null,
+    guildHallFire: null,
     economy: initEconomy(wd),
   };
 }
@@ -541,6 +563,50 @@ export function makeReducer(wd: WorldData) {
         const player = receiveCourierResponse(advanced.player ?? state.player, action.questId);
         if (player === (advanced.player ?? state.player)) return advanced;
         return { ...advanced, player, panelTab: 'quests' };
+      }
+      case 'inspectGuildRuins': {
+        if (!state.player) return state;
+        const player = inspectGuildRuins(state.player, action.questId);
+        if (player === state.player) return state;
+        const cellId = state.player.location.cellId;
+        const burg = wd.world.burgs.find((b) => b.cell === cellId);
+        const placeName = burg?.name ?? state.player.location.placeName;
+        const fireEvent: WorldEvent = {
+          id: 'guild-hall-fire',
+          ord: state.ord,
+          date: state.date,
+          title: `Fire guts the Adventurers' Guild hall of ${placeName}`,
+          description:
+            'The hall burned in the night — all at once, witnesses say, and far too hot. ' +
+            'Four guild members died in it; only two rooms still stand.',
+          kind: 'story',
+          location: { cell: cellId, burg: burg?.i },
+        };
+        return {
+          ...state,
+          player,
+          panelTab: 'quests',
+          guildHallFire: state.guildHallFire ?? { cellId, burgId: burg?.i, placeName, date: state.date },
+          feed: [fireEvent, ...state.feed],
+        };
+      }
+      case 'speakToSemina': {
+        if (!state.player) return state;
+        const player = speakToSemina(state.player, action.questId);
+        if (player === state.player) return state;
+        return { ...state, player, panelTab: 'quests' };
+      }
+      case 'meetEmgerdas': {
+        if (!state.player) return state;
+        const player = startStabilizeQuest(state.player, state.date);
+        if (player === state.player) return state;
+        return { ...state, player, panelTab: 'quests' };
+      }
+      case 'meetSeminol': {
+        if (!state.player) return state;
+        const player = meetSeminol(state.player, action.questId);
+        if (player === state.player) return state;
+        return { ...state, player, panelTab: 'quests' };
       }
       case 'travel': {
         if (!state.player) return state;

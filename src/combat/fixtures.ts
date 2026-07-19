@@ -49,7 +49,7 @@ export function makeTestCharacter(classId: CharacterClassId = 'fighter'): Player
         status: 'active',
         phase: 'deliver-letter',
         giverName: 'Test Guildmaster',
-        giverRole: "Head of the Adventurers' Guild",
+        giverRole: "Flame-Commander of the Adventurers' Guild hall in Rhakorash Savanna",
         origin: {
           cellId: 5000,
           x: 761,
