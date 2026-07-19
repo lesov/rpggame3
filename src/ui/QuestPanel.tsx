@@ -1,13 +1,19 @@
 import type { QuestStepStatus } from '../quests/types';
 import {
   canDeliverCourierLetter,
+  canInspectGuildRuins,
+  canMeetEmgerdas,
+  canMeetSeminol,
   canReceiveCourierResponse,
+  canSpeakToSemina,
+  completedCourierQuest,
   courierObjective,
   questStepLabel,
   responseWaitRemainingMinutes,
 } from '../quests/progression';
+import { EMGERDAS_SCENE, RUINS_SCENE, SEMINA_SCENE, SEMINOL_SCENE } from '../quests/survivors';
 import { formatDateTime, formatTime24 } from '../sim/calendar';
-import { useGame } from './store';
+import { useGame, type GameAction } from './store';
 
 const STEP_LABEL: Record<QuestStepStatus, string> = {
   active: 'Current',
@@ -21,6 +27,28 @@ function waitButtonLabel(minutes: number): string {
   return `Wait ${hours} ${hours === 1 ? 'hour' : 'hours'} for response`;
 }
 
+function SceneBlock({
+  scene,
+  action,
+  dispatch,
+}: {
+  scene: { heading: string; paragraphs: string[]; action: string };
+  action: GameAction;
+  dispatch: (action: GameAction) => void;
+}) {
+  return (
+    <div className="quest-dialogue">
+      <strong>{scene.heading}</strong>
+      {scene.paragraphs.map((text, i) => (
+        <p key={i}>{text}</p>
+      ))}
+      <button className="primary-action" onClick={() => dispatch(action)}>
+        {scene.action}
+      </button>
+    </div>
+  );
+}
+
 export function QuestPanel() {
   const { state, dispatch } = useGame();
   const player = state.player;
@@ -28,7 +56,9 @@ export function QuestPanel() {
   if (!player) return <div className="inspector-empty">Create or choose a character to see quests.</div>;
 
   const active = player.quests.filter((quest) => quest.status === 'active');
-  if (active.length === 0) return <div className="inspector-empty">No active quests.</div>;
+  const showEmgerdas = canMeetEmgerdas(player);
+  const courierDone = completedCourierQuest(player);
+  if (active.length === 0 && !showEmgerdas) return <div className="inspector-empty">No active quests.</div>;
 
   return (
     <div className="quest-panel">
@@ -84,6 +114,18 @@ export function QuestPanel() {
               </div>
             )}
 
+            {canInspectGuildRuins(player, quest) && (
+              <SceneBlock scene={RUINS_SCENE} action={{ type: 'inspectGuildRuins', questId: quest.id }} dispatch={dispatch} />
+            )}
+
+            {canSpeakToSemina(player, quest) && (
+              <SceneBlock scene={SEMINA_SCENE} action={{ type: 'speakToSemina', questId: quest.id }} dispatch={dispatch} />
+            )}
+
+            {canMeetSeminol(player, quest) && (
+              <SceneBlock scene={SEMINOL_SCENE} action={{ type: 'meetSeminol', questId: quest.id }} dispatch={dispatch} />
+            )}
+
             <button
               className="primary-action"
               onClick={() =>
@@ -101,6 +143,14 @@ export function QuestPanel() {
           </article>
         );
       })}
+
+      {showEmgerdas && courierDone && (
+        <article className="section quest-card">
+          <h3>{courierDone.title} — completed</h3>
+          <p className="quest-instructions">{courierDone.instructions}</p>
+          <SceneBlock scene={EMGERDAS_SCENE} action={{ type: 'meetEmgerdas' }} dispatch={dispatch} />
+        </article>
+      )}
     </div>
   );
 }

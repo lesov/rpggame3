@@ -41,6 +41,7 @@ describe('starting quest generation', () => {
     const quest = createStartingQuest(wd, origin, 'Test Hero', 1, START_DATE);
     expect(quest.status).toBe('active');
     expect(quest.phase).toBe('deliver-letter');
+    expect(quest.giverRole).toBe(`Flame-Commander of the Adventurers' Guild hall in ${origin.placeName}`);
     expect(quest.destination.placeName).toBe('Crownport');
     expect(quest.instructions).toContain('sealed letter');
     expect(quest.instructions).toContain('return immediately');

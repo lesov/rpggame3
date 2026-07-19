@@ -5,6 +5,7 @@ import type { Quest, QuestStep, QuestStepStatus } from './types';
 import { GUILD_RESPONSE_LETTER_ID, SEALED_GUILD_LETTER_ID } from './startQuest';
 
 export const COURIER_QUEST_ID = 'guild-sealed-letter';
+export const STABILIZE_QUEST_ID = 'stabilize-guild-branch';
 export const RESPONSE_WAIT_MINUTES = 2 * 60;
 
 export function isAtQuestLocation(player: PlayerCharacter, location: PlayerLocation): boolean {
@@ -12,12 +13,14 @@ export function isAtQuestLocation(player: PlayerCharacter, location: PlayerLocat
 }
 
 export function courierObjective(quest: Quest): PlayerLocation {
-  return quest.phase === 'return-response' ? quest.origin : quest.destination;
+  return quest.phase === 'deliver-letter' || quest.phase === 'wait-for-response' ? quest.destination : quest.origin;
 }
 
 export function questStepLabel(quest: Quest): string {
+  if (quest.phase === 'ruins-inspected') return 'At the ruins';
   if (quest.phase === 'return-response') return 'Return objective';
   if (quest.phase === 'wait-for-response') return 'Response pending';
+  if (quest.id === STABILIZE_QUEST_ID) return 'Branch';
   return 'Delivery objective';
 }
 
@@ -78,6 +81,134 @@ export function deliverCourierLetter(player: PlayerCharacter, questId: string, d
               'return-response': 'pending',
             }),
           }
+        : q,
+    ),
+  };
+}
+
+// ---- The burned hall: final leg of the courier quest -----------------------
+
+export function canInspectGuildRuins(player: PlayerCharacter, quest: Quest): boolean {
+  return isCourierQuest(quest) && quest.phase === 'return-response' && isAtQuestLocation(player, quest.origin);
+}
+
+export function inspectGuildRuins(player: PlayerCharacter, questId: string): PlayerCharacter {
+  const quest = player.quests.find((q) => q.id === questId);
+  if (!quest || !canInspectGuildRuins(player, quest)) return player;
+  return {
+    ...player,
+    quests: player.quests.map((q) =>
+      q.id === questId
+        ? {
+            ...q,
+            phase: 'ruins-inspected' as const,
+            instructions:
+              `You returned to ${q.origin.placeName} to find the guild hall gutted by fire. ` +
+              `Among the cold ash there is nothing left of the dead but teeth — no fire you have ever seen burns a body to teeth. ` +
+              `Only the sleeping quarters and a small kitchen still stand under sound roof. ` +
+              `A woman is picking through the wreckage; she may know what happened.`,
+            steps: [
+              ...setStepStatuses(q, { 'return-response': 'completed' }),
+              {
+                id: 'learn-what-happened',
+                title: 'Find out what happened',
+                description: 'Speak to the woman searching the ruins of the hall.',
+                status: 'active' as const,
+              },
+            ],
+          }
+        : q,
+    ),
+  };
+}
+
+export function canSpeakToSemina(player: PlayerCharacter, quest: Quest): boolean {
+  return isCourierQuest(quest) && quest.phase === 'ruins-inspected' && isAtQuestLocation(player, quest.origin);
+}
+
+export function speakToSemina(player: PlayerCharacter, questId: string): PlayerCharacter {
+  const quest = player.quests.find((q) => q.id === questId);
+  if (!quest || !canSpeakToSemina(player, quest)) return player;
+  return {
+    ...player,
+    quests: player.quests.map((q) =>
+      q.id === questId
+        ? {
+            ...q,
+            status: 'completed' as const,
+            instructions:
+              `Semina, the hall's maid, told you everything: yesterday in the night the hall went up all at once, ` +
+              `and four guild members died in it — among them ${q.giverName}, the Flame-Commander who sent you to the capital. ` +
+              `The response letter you carried home is addressed to a dead man. Your errand is over; what it was for died with him.`,
+            steps: setStepStatuses(q, { 'learn-what-happened': 'completed' }),
+          }
+        : q,
+    ),
+  };
+}
+
+export function completedCourierQuest(player: PlayerCharacter): Quest | undefined {
+  return player.quests.find((q) => q.id === COURIER_QUEST_ID && q.status === 'completed');
+}
+
+export function canMeetEmgerdas(player: PlayerCharacter): boolean {
+  const courier = completedCourierQuest(player);
+  if (!courier || !isAtQuestLocation(player, courier.origin)) return false;
+  return !player.quests.some((q) => q.id === STABILIZE_QUEST_ID);
+}
+
+export function startStabilizeQuest(player: PlayerCharacter, startedAt: GameDate): PlayerCharacter {
+  if (!canMeetEmgerdas(player)) return player;
+  const origin = completedCourierQuest(player)!.origin;
+  const quest: Quest = {
+    id: STABILIZE_QUEST_ID,
+    title: 'Ashes of the Hearth',
+    status: 'active',
+    phase: 'seminol-arriving',
+    giverName: 'Emgerdas',
+    giverRole: `guild alchemist and enchanter in ${origin.placeName}`,
+    origin,
+    destination: origin,
+    targetName: `The ${origin.placeName} guild hall`,
+    targetRole: 'what remains of it',
+    instructions:
+      `The ${origin.placeName} branch of the Adventurers' Guild is down to three: you, Emgerdas, and Seminol. ` +
+      `You are living out of the two rooms the fire spared — the sleeping quarters and the small kitchen. ` +
+      `Emgerdas needs his laboratory equipment replaced before he can work, and he insists the flame that took the hall ` +
+      `was wrong: far too hot for burning timber. Hold the branch together.`,
+    steps: [
+      {
+        id: 'hold-the-branch',
+        title: 'Hold the branch together',
+        description: 'Keep the guild branch alive with Emgerdas and Seminol.',
+        status: 'active',
+      },
+    ],
+    startedAt,
+  };
+  return { ...player, quests: [...player.quests, quest] };
+}
+
+export function canMeetSeminol(player: PlayerCharacter, quest: Quest): boolean {
+  return (
+    quest.id === STABILIZE_QUEST_ID &&
+    quest.status === 'active' &&
+    quest.phase === 'seminol-arriving' &&
+    isAtQuestLocation(player, quest.origin)
+  );
+}
+
+export function meetSeminol(player: PlayerCharacter, questId: string): PlayerCharacter {
+  const quest = player.quests.find((q) => q.id === questId);
+  if (!quest || !canMeetSeminol(player, quest)) return player;
+  return {
+    ...player,
+    quests: player.quests.map((q) =>
+      q.id === questId
+        ? (() => {
+            const { phase: _phase, ...rest } = q;
+            return rest;
+          })()
         : q,
     ),
   };

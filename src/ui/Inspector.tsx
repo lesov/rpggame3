@@ -5,6 +5,9 @@ import { weatherAt, type Weather } from '../sim/weather';
 import { addDays, season, MONTH_NAMES } from '../sim/calendar';
 import type { Burg, Person, SettlementBuilding } from '../data/types';
 import { CITY_HALL_BURGS, GUILD_BRANCH_LABEL, type GuildBranch } from '../lore/guild';
+import { HALL_SURVIVORS, type NpcSheet } from '../quests/survivors';
+import { ABILITIES } from '../player/types';
+import { abilityModifier } from '../player/rules2024';
 
 const CONDITION_ICON: Record<string, string> = {
   Clear: '☀️', 'Partly cloudy': '⛅', Overcast: '☁️', Fog: '🌫️',
@@ -24,7 +27,7 @@ function WeatherRow({ label, w }: { label: string; w: Weather }) {
   );
 }
 
-function buildingLabel(b: SettlementBuilding): string {
+function buildingLabel(b: SettlementBuilding, hallBurned = false): string {
   switch (b.type) {
     case 'central_square': return `Central square${b.hasMessageBoard ? ' with message board' : ''}`;
     case 'trader': return 'Trader';
@@ -34,19 +37,48 @@ function buildingLabel(b: SettlementBuilding): string {
     case 'craftsman': return `Craftsman — ${b.grade}${b.focus ? `, ${b.focus}` : ''}`;
     case 'shop': return `${b.name ?? 'Shop'} (${b.grade} shop)`;
     case 'adventure_guild':
-      return "Adventurers' guild";
+      return `Adventurers' guild${hallBurned ? ' — burned ruin' : ''}`;
     case 'arena': return `Arena (${b.purpose}, seats ${b.capacity?.toLocaleString()})`;
     default: return b.type.replaceAll('_', ' ');
   }
 }
 
-function PersonCard({ p }: { p: Person }) {
+function NpcSheetSection({ sheet }: { sheet: NpcSheet }) {
+  return (
+    <div className="npc-sheet">
+      <div className="kv"><span>Class</span><span>{sheet.className} {sheet.level} · proficiency +{sheet.proficiencyBonus}</span></div>
+      <div className="kv"><span>Looks</span><span>{sheet.appearance.descriptor}</span></div>
+      <div className="kv">
+        <span>Abilities</span>
+        <span>
+          {ABILITIES.map((a) => {
+            const mod = abilityModifier(sheet.abilityScores[a]);
+            return `${a.toUpperCase()} ${sheet.abilityScores[a]} (${mod >= 0 ? '+' : ''}${mod})`;
+          }).join(' · ')}
+        </span>
+      </div>
+      <div className="kv"><span>Combat</span><span>HP {sheet.maxHp} · AC {sheet.armorClass} · Speed {sheet.speed} ft</span></div>
+      <div className="kv"><span>Saves</span><span>{sheet.savingThrows.map((a) => a.toUpperCase()).join(', ')}</span></div>
+      <div className="kv"><span>Skills</span><span>{sheet.skillProficiencies.join(', ')}</span></div>
+      <div className="kv"><span>Features</span><span>{sheet.features.join(', ')}</span></div>
+      <ul className="building-list">
+        {sheet.equipment.map((item) => (
+          <li key={item.name}>{item.name}{item.note ? ` — ${item.note}` : ''}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PersonCard({ p }: { p: Person & { sheet?: NpcSheet } }) {
   const [open, setOpen] = useState(false);
   const [traitsRevealed, setTraitsRevealed] = useState(false);
   const roleLabel =
     p.role === 'state_ruler' ? 'Ruler'
     : p.role === 'military_leader' ? 'Warlord'
     : p.role === 'guild_firekeeper' ? "Adventurers' Guild"
+    : p.role === 'guild_survivor' ? 'Guild survivor'
+    : p.role === 'guild_staff' ? 'Guild staff'
     : 'Head of faith';
   return (
     <div className={`person-card${open ? ' open' : ''}`} onClick={() => setOpen(!open)}>
@@ -73,11 +105,12 @@ function PersonCard({ p }: { p: Person }) {
         </button>
       </div>
       {open && <div className="person-bio">{p.bio}</div>}
+      {open && p.sheet && <NpcSheetSection sheet={p.sheet} />}
     </div>
   );
 }
 
-function BurgCard({ burg }: { burg: Burg }) {
+function BurgCard({ burg, hallBurned = false }: { burg: Burg; hallBurned?: boolean }) {
   const flags = [
     burg.capital && 'capital',
     burg.port && 'port',
@@ -105,9 +138,24 @@ function BurgCard({ burg }: { burg: Burg }) {
       {burg.buildings.length > 0 && (
         <ul className="building-list">
           {burg.buildings.map((b, i) => (
-            <li key={i}>{buildingLabel(b)}</li>
+            <li key={i}>{buildingLabel(b, hallBurned)}</li>
           ))}
         </ul>
+      )}
+      {hallBurned && (
+        <>
+          <div className="kv">
+            <span>Guild</span>
+            <span>Adventurers' guild — burned ruin; only the sleeping quarters and the small kitchen still stand</span>
+          </div>
+          <div className="kv">
+            <span>Survivors</span>
+            <span>Four guild members died in the fire. Three people remain of the branch.</span>
+          </div>
+          {HALL_SURVIVORS.map((p) => (
+            <PersonCard p={p} key={p.id} />
+          ))}
+        </>
       )}
     </div>
   );
@@ -197,7 +245,12 @@ export function Inspector() {
         </div>
       )}
 
-      {info.burg && <BurgCard burg={info.burg} />}
+      {info.burg && (
+        <BurgCard
+          burg={info.burg}
+          hallBurned={state.guildHallFire != null && (state.guildHallFire.burgId === info.burg.i || state.guildHallFire.cellId === info.burg.cell)}
+        />
+      )}
 
       {nearby.length > 0 && (
         <div className="section">

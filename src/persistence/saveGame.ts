@@ -128,6 +128,7 @@ export function deserializeGame(env: SaveEnvelope, wd: WorldData): GameState | n
   const { economy, ...rest } = env.state;
   return {
     ...rest,
+    guildHallFire: rest.guildHallFire ?? null, // absent in pre-fire saves
     economy: decodeEconomy(economy, wd),
     jump: null,
     focus: null,
