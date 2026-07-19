@@ -62,7 +62,9 @@ const DAYLIGHT_START = 6;
 const DAYLIGHT_END = 18;
 
 export const BOAT_FARE_BASE_VOSELS = 10;
-export const BOAT_FARE_VOSELS_PER_MILE = 3;
+export const BOAT_FARE_VOSELS_PER_MILE = 2;
+/** Ports beyond this direct distance are not offered for passage. */
+export const SEA_PASSAGE_RANGE_MI = 250;
 
 /** Passage fare on a crewed ship: base price plus a per-mile rate. */
 export function boatFareVosels(distanceMi: number): number {
@@ -128,16 +130,95 @@ function isPointDestination(item: NearbyItem): item is NearbyItem & { kind: Trav
   return item.kind === 'burg';
 }
 
+/**
+ * Azgaar splits one continuous road into many segments that meet at shared
+ * junction points. Travel must treat a chain of connected segments as a single
+ * road network, or a leg between two towns served by different segments of the
+ * same road would wrongly fall back to off-road. Union segments whose points
+ * (nearly) touch into components, cached per world.
+ */
+const ROAD_JOIN_EPS_MI = 3;
+const roadComponentCache = new WeakMap<WorldData, Map<number, number>>();
+
+function roadComponents(wd: WorldData): Map<number, number> {
+  const cached = roadComponentCache.get(wd);
+  if (cached) return cached;
+
+  const roads = wd.world.routes.filter((r) => r.group === 'roads' || r.group === 'trails');
+  const parent = new Map<number, number>(roads.map((r) => [r.i, r.i]));
+  const find = (i: number): number => {
+    let root = i;
+    while (parent.get(root) !== root) root = parent.get(root)!;
+    let cur = i;
+    while (cur !== root) {
+      const next = parent.get(cur)!;
+      parent.set(cur, root);
+      cur = next;
+    }
+    return root;
+  };
+  const union = (a: number, b: number) => parent.set(find(a), find(b));
+
+  // Grid-hash every point; segments sharing a cell (or an adjacent one) join.
+  const cellSizeMap = ROAD_JOIN_EPS_MI / wd.geometry.distanceScale;
+  const grid = new Map<string, number[]>();
+  for (const route of roads) {
+    for (const [x, y] of route.points) {
+      const gx = Math.floor(x / cellSizeMap);
+      const gy = Math.floor(y / cellSizeMap);
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          const key = `${gx + dx},${gy + dy}`;
+          const bucket = grid.get(key);
+          if (dx === 0 && dy === 0) {
+            if (bucket) {
+              for (const other of bucket) union(route.i, other);
+              if (!bucket.includes(route.i)) bucket.push(route.i);
+            } else {
+              grid.set(key, [route.i]);
+            }
+          } else if (bucket) {
+            for (const other of bucket) union(route.i, other);
+          }
+        }
+      }
+    }
+  }
+
+  const components = new Map<number, number>(roads.map((r) => [r.i, find(r.i)]));
+  roadComponentCache.set(wd, components);
+  return components;
+}
+
 export function roadRouteFor(wd: WorldData, from: { x: number; y: number }, to: { x: number; y: number }) {
+  const components = roadComponents(wd);
+  type End = { component: number; group: 'roads' | 'trails'; accessMi: number };
+  const nearestByComponent = (x: number, y: number): Map<number, End> => {
+    const best = new Map<number, End>();
+    for (const route of wd.world.routes) {
+      if (route.group !== 'roads' && route.group !== 'trails') continue;
+      const accessMi = minDistanceToRouteMi(wd, route, x, y);
+      if (accessMi > ROAD_ACCESS_MI) continue;
+      const component = components.get(route.i)!;
+      const cur = best.get(component);
+      if (!cur || accessMi < cur.accessMi || (accessMi === cur.accessMi && route.group === 'roads')) {
+        best.set(component, { component, group: route.group, accessMi });
+      }
+    }
+    return best;
+  };
+
+  const fromEnds = nearestByComponent(from.x, from.y);
+  const toEnds = nearestByComponent(to.x, to.y);
   let best: { group: 'roads' | 'trails'; accessMi: number } | null = null;
-  for (const route of wd.world.routes) {
-    if (route.group !== 'roads' && route.group !== 'trails') continue;
-    const fromAccess = minDistanceToRouteMi(wd, route, from.x, from.y);
-    const toAccess = minDistanceToRouteMi(wd, route, to.x, to.y);
-    if (fromAccess > ROAD_ACCESS_MI || toAccess > ROAD_ACCESS_MI) continue;
-    const accessMi = fromAccess + toAccess;
-    if (!best || accessMi < best.accessMi || (accessMi === best.accessMi && route.group === 'roads')) {
-      best = { group: route.group, accessMi };
+  for (const [component, fromEnd] of fromEnds) {
+    const toEnd = toEnds.get(component);
+    if (!toEnd) continue;
+    const accessMi = fromEnd.accessMi + toEnd.accessMi;
+    // Travel is only as fast as the slower class touched at either end.
+    const group = fromEnd.group === 'roads' && toEnd.group === 'roads' ? 'roads' : 'trails';
+    if (!best || accessMi < best.accessMi || (accessMi === best.accessMi && group === 'roads')) {
+      best = { group, accessMi };
     }
   }
   return best;
@@ -302,8 +383,9 @@ export function seaPortDestinations(wd: WorldData, player: PlayerCharacter): Tra
   const originCellId = player.location.cellId;
   return wd.world.burgs
     .filter((burg) => burg.port && burg.i !== originPort.burgId)
-    .map((burg) => {
-      const distanceMi = pointDistanceMi(wd, player.location.x, player.location.y, burg.x, burg.y);
+    .map((burg) => ({ burg, distanceMi: pointDistanceMi(wd, player.location.x, player.location.y, burg.x, burg.y) }))
+    .filter(({ distanceMi }) => distanceMi <= SEA_PASSAGE_RANGE_MI)
+    .map(({ burg, distanceMi }) => {
       return {
         id: `sea-${burg.cell}`,
         name: burg.name,

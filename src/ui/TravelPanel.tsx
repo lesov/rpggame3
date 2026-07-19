@@ -156,7 +156,7 @@ export function TravelPanel() {
         <div className="section">
           <h3>Sea passage</h3>
           <div className="small-note">
-            Book passage on a sailing ship to any port — 2 mph, day and night, no encounters at sea. Fare: 10 vosels + 3 per mile.
+            Book passage on a sailing ship to any port within 250 miles — 2 mph, day and night, no encounters at sea. Fare: 10 vosels + 2 per mile.
           </div>
           <div className="travel-destination-list sea-passage-list">
             {seaDestinations.map((dest) => (

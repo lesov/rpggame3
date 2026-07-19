@@ -289,6 +289,51 @@ describe('travel planning', () => {
     expect(destinations.every((d) => d.kind === 'burg' || d.kind === 'marker')).toBe(true);
   });
 
+  it('joins connected road segments so multi-segment roads still count as roads', () => {
+    const wd = makeTravelWorld();
+    // Replace the single road with two segments meeting at a junction (x=50).
+    wd.world.routes.length = 0;
+    wd.world.routes.push(
+      { i: 1, group: 'roads', points: [[0, 0], [50, 0]] },
+      { i: 2, group: 'roads', points: [[50, 0], [100, 0]] },
+    );
+    // Origin (0,0) touches only segment 1; Far Town (100,0) only segment 2.
+    const route = roadRouteFor(wd, { x: 0, y: 0 }, { x: 100, y: 0 });
+    expect(route).not.toBeNull();
+    expect(route?.group).toBe('roads');
+  });
+
+  it('keeps disconnected road segments apart', () => {
+    const wd = makeTravelWorld();
+    wd.world.routes.length = 0;
+    wd.world.routes.push(
+      { i: 1, group: 'roads', points: [[0, 0], [20, 0]] },
+      { i: 2, group: 'roads', points: [[80, 0], [100, 0]] }, // 60-mile gap
+    );
+    expect(roadRouteFor(wd, { x: 0, y: 0 }, { x: 100, y: 0 })).toBeNull();
+  });
+
+  it('uses trail speed when the connected chain mixes roads and trails at the ends', () => {
+    const wd = makeTravelWorld();
+    wd.world.routes.length = 0;
+    wd.world.routes.push(
+      { i: 1, group: 'roads', points: [[0, 0], [50, 0]] },
+      { i: 2, group: 'trails', points: [[50, 0], [100, 0]] },
+    );
+    const route = roadRouteFor(wd, { x: 0, y: 0 }, { x: 100, y: 0 });
+    expect(route?.group).toBe('trails');
+  });
+
+  it('finds the Sterzhkov-Mememil road across segment boundaries in the world data', () => {
+    const dir = path.resolve(__dirname, '../../public/data');
+    const read = (f: string) => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+    const wd = buildWorldData(read('geometry.json'), read('world.json'), read('events.wars.json'));
+    const sterzhkov = wd.world.burgs.find((b) => b.name === 'Sterzhkov')!;
+    const mememil = wd.world.burgs.find((b) => b.name === 'Mememil')!;
+    const route = roadRouteFor(wd, sterzhkov, mememil);
+    expect(route).not.toBeNull();
+  });
+
   it('excludes random-encounter markers from destinations but keeps other markers', () => {
     const wd = makeTravelWorld();
     wd.world.markers.push(
@@ -327,9 +372,9 @@ describe('travel planning', () => {
     expect(plan.paceDetail).toContain('no encounters at sea');
   });
 
-  it('charges a distance-based fare: 10 vosels plus 3 per mile', () => {
+  it('charges a distance-based fare: 10 vosels plus 2 per mile', () => {
     expect(boatFareVosels(0)).toBe(10);
-    expect(boatFareVosels(100)).toBe(310);
+    expect(boatFareVosels(100)).toBe(210);
     const wd = makeTravelWorld();
     const destinations = nearbyTravelDestinations(wd, makePlayer(), 200, 8);
     const islandPort = destinations.find((d) => d.name === 'Island Port');
@@ -341,12 +386,20 @@ describe('travel planning', () => {
     expect(planTravel(wd, makePlayer(), town, 'road', true, { hour: 8, minute: 0 }).fareVosels).toBeUndefined();
   });
 
-  it('lists every other port as a sea-passage destination when at a port', () => {
+  it('lists other ports within 250 miles as sea-passage destinations when at a port', () => {
     const wd = makeTravelWorld();
     const seaDests = seaPortDestinations(wd, makePlayer());
     expect(seaDests.map((d) => d.name)).toContain('Island Port');
     expect(seaDests.every((d) => d.boatReachable)).toBe(true);
+    expect(seaDests.every((d) => d.distanceMi <= 250)).toBe(true);
     expect(seaDests.every((d, i, arr) => i === 0 || arr[i - 1].distanceMi <= d.distanceMi)).toBe(true);
+    // A port beyond the passage range is not offered.
+    wd.world.burgs.push({
+      i: 90, name: 'Distant Port', cell: 2, x: 400, y: 0, state: 1, culture: 1, type: 'Town', group: 'town',
+      capital: false, port: true, citadel: false, walls: false, temple: false, plaza: true, shanty: false,
+      population: 1000, tier: 'town', buildings: [], landmarks: {},
+    } as (typeof wd.world.burgs)[number]);
+    expect(seaPortDestinations(wd, makePlayer()).map((d) => d.name)).not.toContain('Distant Port');
     // Away from any port there is no sea passage.
     const inland = { ...makePlayer(), location: { ...makePlayer().location, x: 500, y: 500, cellId: 0 } };
     expect(seaPortDestinations(wd, inland)).toEqual([]);
