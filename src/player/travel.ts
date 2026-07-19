@@ -1,6 +1,6 @@
 import { findNearby, type NearbyItem } from '../data/inspect';
 import type { Route } from '../data/types';
-import type { WorldData } from '../data/worldLoader';
+import { isWaterCell, nearestLandCellId, type WorldData } from '../data/worldLoader';
 import { MINUTES_PER_DAY, type GameTime } from '../sim/calendar';
 import { travelSpeedFactor } from '../economy/encumbrance';
 import type { PlayerCharacter, PlayerLocation } from './types';
@@ -104,6 +104,19 @@ function landReachable(wd: WorldData, fromCellId: number, toCellId: number): boo
   const to = wd.geometry.cells[toCellId];
   if (!from || !to || from.h < 20 || to.h < 20) return false;
   return from.f === to.f;
+}
+
+/**
+ * Where reachability is measured from. Normally the player's cell — but a
+ * player standing in the water (e.g. an old save stranded by a mid-bay
+ * interception) is treated as standing on the nearest shore, so the travel
+ * list never comes up empty.
+ */
+function effectiveOriginCellId(wd: WorldData, player: PlayerCharacter): number {
+  const originCellId = player.location.cellId;
+  const cell = wd.geometry.cells[originCellId];
+  if (!cell || !isWaterCell(cell)) return originCellId;
+  return nearestLandCellId(wd, player.location.x, player.location.y) ?? originCellId;
 }
 
 function nearestPort(wd: WorldData, x: number, y: number, maxDistanceMi = 5) {
@@ -314,7 +327,7 @@ function destinationFromNearby(item: NearbyItem & { kind: TravelDestinationKind 
 }
 
 export function nearbyTravelDestinations(wd: WorldData, player: PlayerCharacter, radiusMi = 120, limit = 12): TravelDestination[] {
-  const originCellId = player.location.cellId;
+  const originCellId = effectiveOriginCellId(wd, player);
   const seen = new Set<string>();
   const out: TravelDestination[] = [];
   const radii = [radiusMi, 180, 260, 400, 650].filter((r, i, arr) => r >= radiusMi && arr.indexOf(r) === i);
@@ -380,7 +393,7 @@ export function nearbyTravelDestinations(wd: WorldData, player: PlayerCharacter,
 export function seaPortDestinations(wd: WorldData, player: PlayerCharacter): TravelDestination[] {
   const originPort = nearestPort(wd, player.location.x, player.location.y);
   if (!originPort) return [];
-  const originCellId = player.location.cellId;
+  const originCellId = effectiveOriginCellId(wd, player);
   return wd.world.burgs
     .filter((burg) => burg.port && burg.i !== originPort.burgId)
     .map((burg) => ({ burg, distanceMi: pointDistanceMi(wd, player.location.x, player.location.y, burg.x, burg.y) }))

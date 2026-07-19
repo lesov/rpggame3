@@ -171,3 +171,8 @@ export function formatLatLon(lat: number, lon: number): string {
 export function isWaterCell(c: Cell): boolean {
   return c.h < 20;
 }
+
+/** Nearest land cell to (x, y) — for snapping points that fell in the water. */
+export function nearestLandCellId(wd: WorldData, x: number, y: number): number | null {
+  return wd.cellIndex.nearestMatchingCell(x, y, (id) => !isWaterCell(wd.geometry.cells[id]));
+}
