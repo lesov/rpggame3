@@ -2,6 +2,15 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-19 18:20 CDT - codex - main
+
+- Status: merged
+- Summary: Merged feature/codex/bandit-toll into main locally after human UI approval and merge authorization.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/ui/store.test.ts` — 28 passed; `npx tsc -b` — clean; `npx vitest run` — 318 passed; `npm run build` — passed as of ready-for-review entry.
+- UI review: approved-by-human (2026-07-19)
+- Blockers or coordination notes: No push performed; human will push manually. No release tag requested.
+
 ## 2026-07-19 18:20 CDT - codex - feature/codex/bandit-toll
 
 - Status: approved
