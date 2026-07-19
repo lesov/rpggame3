@@ -18,10 +18,11 @@ import { fireBetween, ongoingWarsAt, type WorldEvent } from '../sim/events';
 import { ambientEventsBetween } from '../sim/ambient';
 import type { WorldData } from '../data/worldLoader';
 import type { RenderOptions } from '../map/renderer';
-import type { PlayerCharacter } from '../player/types';
+import type { PlayerCharacter, Skill } from '../player/types';
 import { travelDestinationLocation, planTravel, provisionsNeeded, type TravelPlan, type TravelMode, type TravelDestination } from '../player/travel';
 import type { CombatState } from '../combat/types';
 import { createCombat, initialPendingRoll, potionsRemainingById } from '../combat/engine';
+import { DiceStream, versus, type RollBreakdown } from '../combat/dice';
 import { generateLoot, type LootItem } from '../combat/loot';
 import { getCatalogItem } from '../economy/catalog';
 import { addItem, spendVosels, voselsOf } from '../economy/money';
@@ -33,7 +34,7 @@ import { hash } from '../sim/rng';
 import { initEconomy, worldTick, weekOf, type EconomyState } from '../trade/economy';
 import { rollTravelEncounters } from '../travel/encounter/run';
 import { initialPacing, advancePacing, resetPacing, type PacingState } from '../travel/encounter/pacing';
-import type { TravelEncounter } from '../travel/encounter/types';
+import type { EncounterActor, TravelEncounter } from '../travel/encounter/types';
 import {
   deliverCourierLetter,
   inspectGuildRuins,
@@ -98,6 +99,7 @@ export interface GameState {
   combat: CombatState | null;
   pacing: PacingState;
   pendingEncounter: PendingEncounter | null;
+  encounterToll: BanditTollResult | null;
   travelTarget: TravelTargetPreview | null;
   selectedCodexId: string | null;
   shop: ShopSession | null;
@@ -135,6 +137,17 @@ export interface PendingEncounter {
   resume: EncounterResume;
 }
 
+export type BanditTollMethod = 'pay-all' | 'persuasion' | 'sleightOfHand';
+
+export interface BanditTollResult {
+  method: BanditTollMethod;
+  demandedVosels: number;
+  paidVosels: number;
+  success: boolean;
+  pending?: boolean;
+  roll?: RollBreakdown;
+}
+
 export interface PendingLoot {
   combatSeed: number;
   monsterId: string;
@@ -165,6 +178,10 @@ export type GameAction =
   | { type: 'resumeTravel' }
   | { type: 'attackEncounter' }
   | { type: 'dismissEncounter' }
+  | { type: 'payBanditToll' }
+  | { type: 'attemptBanditTollSkill'; method: 'persuasion' | 'sleightOfHand' }
+  | { type: 'rollBanditTollSkill' }
+  | { type: 'cancelBanditTollSkill' }
   | { type: 'startCombat'; monsterId?: string; seed?: number }
   | { type: 'setCombat'; combat: CombatState }
   | { type: 'claimCombatLoot' }
@@ -314,6 +331,7 @@ export function initialState(wd: WorldData): GameState {
     combat: null,
     pacing: initialPacing,
     pendingEncounter: null,
+    encounterToll: null,
     travelTarget: null,
     selectedCodexId: null,
     shop: null,
@@ -405,6 +423,7 @@ function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameSt
       player: movedPlayer,
       pacing: advancePacing(state.pacing, plan.travelHours),
       pendingEncounter: null,
+      encounterToll: null,
       travelTarget: null,
       screen: 'map',
       jump: { seq: (state.jump?.seq ?? 0) + 1, x: location.x, y: location.y, minZoom: 5 },
@@ -438,13 +457,14 @@ function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameSt
     player: movedPlayer,
     pacing: resetPacing(),
     pendingEncounter,
+    encounterToll: null,
     travelTarget: null,
     jump: { seq: (state.jump?.seq ?? 0) + 1, x: e.x, y: e.y, minZoom: 6 },
     focus: { x: e.x, y: e.y },
     selection: { cellId: e.cellId, x: e.x, y: e.y },
     panelTab: 'travel',
   };
-  if (e.actor.hostile) {
+  if (e.actor.hostile && !isBanditTollActor(e.actor)) {
     const combat = beginCombat(wd, movedPlayer, base.date, base.time, e.actor.statblockId, hash(seed, 0x5151));
     return { ...base, screen: 'combat', combat };
   }
@@ -453,6 +473,55 @@ function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameSt
 
 function minuteOfDayOf(time: GameTime): number {
   return time.hour * 60 + time.minute;
+}
+
+function banditTollAmount(player: PlayerCharacter): { full: number; half: number } {
+  const full = voselsOf(player);
+  return { full, half: Math.ceil(full / 2) };
+}
+
+export function isBanditTollActor(actor: EncounterActor): boolean {
+  return actor.hostile && (actor.kind === 'brigand' || actor.statblockId === 'bandit');
+}
+
+function canSettleBanditToll(state: GameState): state is GameState & { player: PlayerCharacter; pendingEncounter: PendingEncounter } {
+  return Boolean(state.player && state.pendingEncounter && isBanditTollActor(state.pendingEncounter.encounter.actor) && !state.encounterToll);
+}
+
+function tollSkillModifier(player: PlayerCharacter, method: 'persuasion' | 'sleightOfHand'): number {
+  const skill: Skill = method;
+  const ability = method === 'persuasion' ? 'cha' : 'dex';
+  return player.abilityModifiers[ability] + (player.skillProficiencies.includes(skill) ? player.proficiencyBonus : 0);
+}
+
+export function banditTollDc(state: Pick<GameState, 'pendingEncounter'>): number {
+  const e = state.pendingEncounter?.encounter;
+  if (!e) return 13;
+  const hostility = e.hostileChance >= 0.75 ? 2 : e.hostileChance >= 0.45 ? 1 : 0;
+  const danger = e.lambda >= 0.25 ? 1 : 0;
+  return 12 + hostility + danger;
+}
+
+function rollBanditTollSkill(state: GameState, method: 'persuasion' | 'sleightOfHand'): RollBreakdown {
+  const player = state.player!;
+  const pe = state.pendingEncounter!;
+  const seed = hash(
+    state.ord,
+    minuteOfDayOf(state.time),
+    pe.encounter.cellId,
+    hashText(pe.encounter.actor.statblockId),
+    method === 'persuasion' ? 0x9e51 : 0x51e1,
+  );
+  const label = method === 'persuasion' ? `${player.name} — Persuasion` : `${player.name} — Sleight of Hand`;
+  const roll = new DiceStream(seed).d20(label, tollSkillModifier(player, method));
+  const dc = banditTollDc(state);
+  return versus(roll, 'DC', dc, roll.total >= dc);
+}
+
+function hashText(text: string): number {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
 }
 
 export function makeReducer(wd: WorldData) {
@@ -532,6 +601,7 @@ export function makeReducer(wd: WorldData) {
           eventHighlight: null,
           selection: { cellId: location.cellId, x: location.x, y: location.y },
           travelTarget: null,
+          encounterToll: null,
           panelTab: 'character',
         };
       }
@@ -542,7 +612,7 @@ export function makeReducer(wd: WorldData) {
         const jump: JumpCommand | null = loc
           ? { seq: (state.jump?.seq ?? 0) + 1, x: loc.x, y: loc.y, minZoom: 6 }
           : null;
-        return { ...loaded, jump, focus: loc ? { x: loc.x, y: loc.y } : null, eventHighlight: null };
+        return { ...loaded, jump, focus: loc ? { x: loc.x, y: loc.y } : null, eventHighlight: null, encounterToll: null };
       }
       case 'setTravelTarget': {
         const current = state.travelTarget;
@@ -625,24 +695,63 @@ export function makeReducer(wd: WorldData) {
       }
       case 'resumeTravel': {
         const pe = state.pendingEncounter;
-        if (!state.player || !pe) return { ...state, pendingEncounter: null, screen: 'map' };
+        if (!state.player || !pe) return { ...state, pendingEncounter: null, encounterToll: null, screen: 'map' };
         const replan = planTravel(wd, state.player, pe.resume.destination, pe.resume.mode, pe.resume.dayOnly, state.time);
-        return runTravelLeg(wd, { ...state, pendingEncounter: null }, replan);
+        return runTravelLeg(wd, { ...state, pendingEncounter: null, encounterToll: null }, replan);
       }
       case 'attackEncounter': {
         const pe = state.pendingEncounter;
         if (!state.player || !pe) return state;
         const seed = hash(state.ord, pe.encounter.cellId, minuteOfDayOf(state.time), 0x0a11ac);
         const combat = beginCombat(wd, state.player, state.date, state.time, pe.encounter.actor.statblockId, seed);
-        return { ...state, screen: 'combat', combat };
+        return { ...state, screen: 'combat', combat, encounterToll: null };
       }
       case 'dismissEncounter':
-        return { ...state, pendingEncounter: null, screen: 'map' };
+        return { ...state, pendingEncounter: null, encounterToll: null, screen: 'map' };
+      case 'payBanditToll': {
+        if (!canSettleBanditToll(state)) return state;
+        const { full } = banditTollAmount(state.player);
+        if (full <= 0) return state;
+        return {
+          ...state,
+          player: spendVosels(state.player, full),
+          encounterToll: { method: 'pay-all', demandedVosels: full, paidVosels: full, success: true },
+        };
+      }
+      case 'attemptBanditTollSkill': {
+        if (!canSettleBanditToll(state)) return state;
+        const { full } = banditTollAmount(state.player);
+        if (full <= 0) return state;
+        return {
+          ...state,
+          encounterToll: { method: action.method, demandedVosels: full, paidVosels: 0, success: false, pending: true },
+        };
+      }
+      case 'rollBanditTollSkill': {
+        if (!state.player || !state.pendingEncounter || !state.encounterToll?.pending || state.encounterToll.method === 'pay-all') return state;
+        const method = state.encounterToll.method;
+        const full = state.encounterToll.demandedVosels;
+        const half = Math.ceil(full / 2);
+        const roll = rollBanditTollSkill(state, method);
+        if (!roll.vs?.success) {
+          return {
+            ...state,
+            encounterToll: { method, demandedVosels: full, paidVosels: 0, success: false, roll },
+          };
+        }
+        return {
+          ...state,
+          player: spendVosels(state.player, half),
+          encounterToll: { method, demandedVosels: full, paidVosels: half, success: true, roll },
+        };
+      }
+      case 'cancelBanditTollSkill':
+        return state.encounterToll?.pending ? { ...state, encounterToll: null } : state;
       case 'startCombat': {
         if (!state.player) return state;
         const seed = action.seed ?? ((Math.random() * 0x7fffffff) | 0);
         const combat = beginCombat(wd, state.player, state.date, state.time, action.monsterId, seed);
-        return { ...state, screen: 'combat', combat, pendingLoot: null, playing: false };
+        return { ...state, screen: 'combat', combat, pendingLoot: null, encounterToll: null, playing: false };
       }
       case 'setCombat':
         return { ...state, combat: action.combat };
@@ -692,7 +801,7 @@ export function makeReducer(wd: WorldData) {
               .filter((item) => item.quantity > 0),
           };
         }
-        return { ...state, screen: 'map', combat: null, player, pendingLoot: null };
+        return { ...state, screen: 'map', combat: null, player, pendingLoot: null, encounterToll: null };
       }
       case 'openShop': {
         if (!state.player || action.vendors.length === 0) return state;
