@@ -52,6 +52,17 @@ export interface JumpCommand {
   minZoom?: number;
 }
 
+export interface EventHighlight {
+  id: string;
+  x: number;
+  y: number;
+  radiusWorld: number;
+  label: string;
+  kind: WorldEvent['kind'];
+  anchor?: boolean;
+  cellId?: number;
+}
+
 export interface TravelTargetPreview {
   id: string;
   name: string;
@@ -73,6 +84,7 @@ export interface GameState {
   options: RenderOptions;
   jump: JumpCommand | null;
   focus: { x: number; y: number } | null;
+  eventHighlight: EventHighlight | null;
   player: PlayerCharacter | null;
   screen: 'map' | 'combat' | 'encounter' | 'shop';
   combat: CombatState | null;
@@ -122,6 +134,7 @@ export type GameAction =
   | { type: 'openCodex'; entryId: string }
   | { type: 'setOptions'; options: Partial<RenderOptions> }
   | { type: 'jumpTo'; x: number; y: number; minZoom?: number; selectCell?: number }
+  | { type: 'showEventOnMap'; event: WorldEvent }
   | { type: 'setPlayer'; player: PlayerCharacter }
   | { type: 'loadGame'; state: GameState }
   | { type: 'setTravelTarget'; target: TravelTargetPreview | null }
@@ -159,6 +172,75 @@ export function eventLocation(wd: WorldData, e: WorldEvent): { x: number; y: num
   }
   if (e.location.x !== undefined && e.location.y !== undefined) return { x: e.location.x, y: e.location.y };
   return null;
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return v < lo ? lo : v > hi ? hi : v;
+}
+
+function locatedEventRadius(e: WorldEvent): number {
+  const stateCount = e.states?.length ?? 0;
+  const byKind: Record<WorldEvent['kind'], number> = {
+    weather: 22,
+    festival: 24,
+    rumor: 26,
+    sighting: 28,
+    story: 42,
+    anchor: 78,
+    war: 92,
+  };
+  const base = byKind[e.kind] ?? 40;
+  return clamp(base * (1 + Math.min(stateCount, 6) * 0.16), 18, 170);
+}
+
+function stateAreaHighlight(wd: WorldData, e: WorldEvent): EventHighlight | null {
+  const stateIds = new Set((e.states ?? []).filter((id) => id > 0));
+  if (stateIds.size === 0) return null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let count = 0;
+  for (const cell of wd.geometry.cells) {
+    if (!stateIds.has(cell.state)) continue;
+    minX = Math.min(minX, cell.p[0]);
+    minY = Math.min(minY, cell.p[1]);
+    maxX = Math.max(maxX, cell.p[0]);
+    maxY = Math.max(maxY, cell.p[1]);
+    count++;
+  }
+  if (count === 0) return null;
+  const x = (minX + maxX) / 2;
+  const y = (minY + maxY) / 2;
+  const diagonal = Math.hypot(maxX - minX, maxY - minY);
+  const minRadius = e.kind === 'war' ? 80 : e.anchor ? 70 : 50;
+  const maxRadius = Math.min(Math.max(wd.geometry.width, wd.geometry.height) * 0.33, 360);
+  return {
+    id: e.id,
+    x,
+    y,
+    radiusWorld: clamp(diagonal * 0.52, minRadius, maxRadius),
+    label: e.title,
+    kind: e.kind,
+    anchor: e.anchor,
+  };
+}
+
+export function eventHighlightFor(wd: WorldData, e: WorldEvent): EventHighlight | null {
+  const loc = eventLocation(wd, e);
+  if (loc) {
+    return {
+      id: e.id,
+      x: loc.x,
+      y: loc.y,
+      radiusWorld: locatedEventRadius(e),
+      label: e.title,
+      kind: e.kind,
+      anchor: e.anchor,
+      cellId: loc.cellId,
+    };
+  }
+  return stateAreaHighlight(wd, e);
 }
 
 /** The vendors a player can visit while standing in a settlement (else []). */
@@ -205,6 +287,7 @@ export function initialState(wd: WorldData): GameState {
     options: { mode: 'biome', showMarkers: true, showRoutes: true, showLabels: true },
     jump: null,
     focus: null,
+    eventHighlight: null,
     player: null,
     screen: 'map',
     combat: null,
@@ -350,9 +433,14 @@ export function makeReducer(wd: WorldData) {
       case 'setSpeed':
         return { ...state, speed: action.speed };
       case 'select':
-        return { ...state, selection: action.selection, panelTab: 'inspector', focus: null };
+        return { ...state, selection: action.selection, panelTab: 'inspector', focus: null, eventHighlight: null };
       case 'setTab':
-        return { ...state, panelTab: action.tab };
+        return {
+          ...state,
+          panelTab: action.tab,
+          focus: action.tab === 'events' || !state.eventHighlight ? state.focus : null,
+          eventHighlight: action.tab === 'events' ? state.eventHighlight : null,
+        };
       case 'openCodex':
         return { ...state, panelTab: 'codex', selectedCodexId: action.entryId };
       case 'setOptions':
@@ -372,8 +460,27 @@ export function makeReducer(wd: WorldData) {
           ...state,
           jump,
           focus: { x: action.x, y: action.y },
+          eventHighlight: null,
           selection,
           panelTab: action.selectCell !== undefined ? 'inspector' : state.panelTab,
+        };
+      }
+      case 'showEventOnMap': {
+        const highlight = eventHighlightFor(wd, action.event);
+        if (!highlight) return state;
+        const jump: JumpCommand = {
+          seq: (state.jump?.seq ?? 0) + 1,
+          x: highlight.x,
+          y: highlight.y,
+          minZoom: highlight.radiusWorld > 180 ? 2.2 : highlight.radiusWorld > 90 ? 3.2 : 4.8,
+        };
+        return {
+          ...state,
+          jump,
+          focus: null,
+          eventHighlight: highlight,
+          selection: null,
+          panelTab: state.panelTab,
         };
       }
       case 'setPlayer': {
@@ -389,6 +496,7 @@ export function makeReducer(wd: WorldData) {
           player: action.player,
           jump,
           focus: { x: location.x, y: location.y },
+          eventHighlight: null,
           selection: { cellId: location.cellId, x: location.x, y: location.y },
           travelTarget: null,
           panelTab: 'character',
@@ -401,7 +509,7 @@ export function makeReducer(wd: WorldData) {
         const jump: JumpCommand | null = loc
           ? { seq: (state.jump?.seq ?? 0) + 1, x: loc.x, y: loc.y, minZoom: 6 }
           : null;
-        return { ...loaded, jump, focus: loc ? { x: loc.x, y: loc.y } : null };
+        return { ...loaded, jump, focus: loc ? { x: loc.x, y: loc.y } : null, eventHighlight: null };
       }
       case 'setTravelTarget': {
         const current = state.travelTarget;

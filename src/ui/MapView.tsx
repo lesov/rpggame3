@@ -29,6 +29,7 @@ export function MapView() {
     renderer.draw(ctx, w, h, viewRef.current, s.options, {
       selection: s.selection ?? undefined,
       focus: s.focus ?? undefined,
+      eventHighlight: s.eventHighlight ?? undefined,
       travelTarget: s.travelTarget ?? undefined,
       player: s.player ? { x: s.player.location.x, y: s.player.location.y, name: s.player.name } : undefined,
     });
