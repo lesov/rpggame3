@@ -13,6 +13,7 @@ import { chooseStartingLocation } from './spawn';
 import { buildNeutralReputations } from './reputation';
 import type { CharacterBuildInput, CharacterClassId, PlayerCharacter, Skill } from './types';
 import { createStartingQuest, SEALED_GUILD_LETTER_ID } from '../quests/startQuest';
+import { buildAppearance } from './appearance';
 
 function slug(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'player';
@@ -84,6 +85,7 @@ export function buildPlayerCharacter(
 
   const culture = wd.cultureById.get(state.culture);
   const mods = abilityModifiers(input.abilityScores);
+  const appearance = buildAppearance(input.appearance, species.id, species.name, input.abilityScores);
   const classSkillChoices = uniqueSkills(input.skillProficiencies ?? cls.skillChoices).slice(0, cls.skillCount);
   const skillProficiencies = uniqueSkills([...background.skillProficiencies, ...classSkillChoices]);
   const location = chooseStartingLocation(wd, state.i, religion.i, input.name);
@@ -127,6 +129,7 @@ export function buildPlayerCharacter(
     religionName: religion.name,
     cultureId: culture?.i,
     cultureName: culture?.name,
+    appearance,
     abilityScores: input.abilityScores,
     abilityModifiers: mods,
     proficiencyBonus: 2,

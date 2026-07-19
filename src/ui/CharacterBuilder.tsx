@@ -13,8 +13,19 @@ import {
   getSpeciesRule,
   suggestAbilityScores,
 } from '../player/rules2024';
+import {
+  DEFAULT_APPEARANCE,
+  EYE_COLOR_OPTIONS,
+  FACIAL_HAIR_OPTIONS,
+  HAIR_COLOR_OPTIONS,
+  HAIR_LENGTH_OPTIONS,
+  POSTURE_OPTIONS,
+  RELATIVE_HEIGHT_OPTIONS,
+  SKIN_COLOR_OPTIONS,
+  buildAppearance,
+} from '../player/appearance';
 import { findReputation } from '../player/reputation';
-import { ABILITIES, type Ability, type CharacterBuildInput, type CharacterClassId, type Gender, type OriginBackgroundId, type PlayerCharacter, type Skill, type SpeciesId } from '../player/types';
+import { ABILITIES, type Ability, type CharacterAppearanceInput, type CharacterBuildInput, type CharacterClassId, type EyeColor, type FacialHair, type Gender, type HairColor, type HairLength, type OriginBackgroundId, type PlayerCharacter, type Posture, type RelativeHeight, type Skill, type SkinColor, type SpeciesId } from '../player/types';
 import { tokenizeCodexLinks } from '../lore/codex';
 import { useGame } from './store';
 
@@ -64,6 +75,7 @@ function CharacterSheet({ player }: { player: PlayerCharacter }) {
         <div className="kv"><span>Level</span><span>1 {player.speciesName} {player.className}</span></div>
         <div className="kv"><span>Origin</span><span>{player.backgroundName} · {player.nationalityName}</span></div>
         <div className="kv"><span>Guild rank</span><span>{player.guildRank} · Adventurers' Guild</span></div>
+        <div className="kv"><span>Looks</span><span>{player.appearance?.descriptor ?? 'No appearance recorded.'}</span></div>
         <div className="kv"><span>Faith</span><span>{player.religionName}</span></div>
         <div className="kv"><span>Start</span><span>{player.location.placeName}</span></div>
       </div>
@@ -134,6 +146,7 @@ export function CharacterBuilder() {
   const [religionId, setReligionId] = useState(religions[0]?.i ?? 1);
   const [abilityScores, setAbilityScores] = useState(() => suggestAbilityScores('fighter', 'soldier'));
   const [skillProficiencies, setSkillProficiencies] = useState<Skill[]>(() => defaultSkills('fighter'));
+  const [appearance, setAppearance] = useState<CharacterAppearanceInput>(DEFAULT_APPEARANCE);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -148,6 +161,7 @@ export function CharacterBuilder() {
   const dexMod = Math.floor((abilityScores.dex - 10) / 2);
   const hp = Math.max(1, cls.hitDie + conMod);
   const ac = 10 + dexMod;
+  const appearancePreview = buildAppearance(appearance, species.id, species.name, abilityScores);
   const input: CharacterBuildInput = {
     name,
     gender,
@@ -158,6 +172,7 @@ export function CharacterBuilder() {
     religionId,
     abilityScores,
     skillProficiencies,
+    appearance,
   };
   const validation = validateCharacterInput(input);
 
@@ -171,6 +186,10 @@ export function CharacterBuilder() {
       if (skills.length >= cls.skillCount) return skills;
       return [...skills, skill];
     });
+  };
+
+  const updateAppearance = <K extends keyof CharacterAppearanceInput>(key: K, value: CharacterAppearanceInput[K]) => {
+    setAppearance((current) => ({ ...current, [key]: value }));
   };
 
   const createCharacter = (buildInput: CharacterBuildInput) => {
@@ -269,6 +288,56 @@ export function CharacterBuilder() {
           <span>Speed {species.speed}</span>
           <span>PB +2</span>
         </div>
+      </div>
+
+      <div className="section">
+        <h3>Appearance</h3>
+        <div className="form-grid">
+          <label className="field">
+            <span>Skin</span>
+            <select value={appearance.skinColor} onChange={(e) => updateAppearance('skinColor', e.target.value as SkinColor)}>
+              {SKIN_COLOR_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>Hair color</span>
+            <select value={appearance.hairColor} onChange={(e) => updateAppearance('hairColor', e.target.value as HairColor)}>
+              {HAIR_COLOR_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>Hair length</span>
+            <select value={appearance.hairLength} onChange={(e) => updateAppearance('hairLength', e.target.value as HairLength)}>
+              {HAIR_LENGTH_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>Facial hair</span>
+            <select value={appearance.facialHair} onChange={(e) => updateAppearance('facialHair', e.target.value as FacialHair)}>
+              {FACIAL_HAIR_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>Eyes</span>
+            <select value={appearance.eyeColor} onChange={(e) => updateAppearance('eyeColor', e.target.value as EyeColor)}>
+              {EYE_COLOR_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>Height</span>
+            <select value={appearance.relativeHeight} onChange={(e) => updateAppearance('relativeHeight', e.target.value as RelativeHeight)}>
+              {RELATIVE_HEIGHT_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className="field">
+            <span>Posture</span>
+            <select value={appearance.posture} onChange={(e) => updateAppearance('posture', e.target.value as Posture)}>
+              {POSTURE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+            </select>
+          </label>
+        </div>
+        <div className="kv"><span>Build</span><span>{appearancePreview.build} · derived from Strength {abilityScores.str}</span></div>
+        <p className="story-text appearance-preview">{appearancePreview.descriptor}</p>
       </div>
 
       <div className="section">

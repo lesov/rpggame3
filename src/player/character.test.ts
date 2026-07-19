@@ -188,6 +188,8 @@ describe('player character creation', () => {
     expect(pc.inventory.find((item) => item.id === 'vosels')?.quantity).toBe(118);
     expect(pc.inventory.find((item) => item.id === 'sealed-guild-letter')?.category).toBe('quest');
     expect(pc.inventory.find((item) => item.id === 'sealed-guild-letter')?.note).toContain('Testburg');
+    expect(pc.appearance?.descriptor).toContain('human');
+    expect(pc.appearance?.build).toBe('powerful');
     expect(pc.quests).toHaveLength(1);
     expect(pc.quests[0].status).toBe('active');
     expect(pc.quests[0].destination.placeName).toBe('Testburg');
@@ -263,6 +265,31 @@ describe('player character creation', () => {
     expect(pc.story).toContain("Adventurers' Guild");
   });
 
+  it('stores custom appearance choices and derives build from Strength', () => {
+    const pc = buildPlayerCharacter(
+      {
+        ...validInput(),
+        abilityScores: { ...validInput().abilityScores, str: 18 },
+        appearance: {
+          skinColor: 'deep-brown',
+          hairColor: 'white',
+          hairLength: 'long',
+          facialHair: 'full-beard',
+          eyeColor: 'grey',
+          relativeHeight: 'very-tall',
+          posture: 'upright',
+        },
+      },
+      makeWorld(),
+      START_DATE,
+    );
+    expect(pc.appearance?.build).toBe('massive');
+    expect(pc.appearance?.descriptor).toContain('very tall human');
+    expect(pc.appearance?.descriptor).toContain('deep brown skin');
+    expect(pc.appearance?.descriptor).toContain('long white hair');
+    expect(pc.appearance?.descriptor).toContain('a full beard');
+  });
+
   it('keeps pregenerated characters buildable', () => {
     const wd = makeWorld();
     const remapped = PREGENERATED_CHARACTERS.map((pregen) => ({
@@ -282,6 +309,8 @@ describe('player character creation', () => {
       expect(pc.reputations.cultures).toHaveLength(wd.world.cultures.length);
       expect(pc.reputations.religions).toHaveLength(wd.world.religions.filter((religion) => religion.i > 0).length);
       expect([...pc.reputations.cultures, ...pc.reputations.religions].every((entry) => entry.label === 'Neutral')).toBe(true);
+      expect(pc.appearance?.descriptor.length).toBeGreaterThan(40);
+      expect(pc.appearance?.build).toBeTruthy();
       if (input.classId === 'wizard') expect(ids).toContain('spellbook');
       else expect(ids).not.toContain('spellbook');
       expect(pc.minorBonus.name.length).toBeGreaterThan(3);

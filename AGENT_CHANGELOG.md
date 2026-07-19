@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-18 22:20 CDT - codex - feature/codex/character-appearance
+
+- Status: approved
+- Summary: Human tested custom and pregenerated character appearance/Looks UI and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 283 passed; `npx tsc -b` — clean; `npm run build` — passed as of ready-for-review entry.
+- UI review: approved-by-human (2026-07-18)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-18 22:15 CDT - codex - feature/codex/character-appearance
+
+- Status: ready-for-review
+- Summary: Added character appearance data and generated looks descriptors. Custom character creation now has appearance controls for skin, hair color/length, facial hair, eyes, relative height, and posture, with body build derived from Strength. Pregenerated characters now provide hand-authored appearance choices through the same descriptor generator. Character sheet and Inventory show the Looks line.
+- Files changed: AGENT_CHANGELOG.md, new src/player/appearance.ts, new src/player/appearance.test.ts, src/player/types.ts, src/player/character.ts, src/player/character.test.ts, src/player/pregens.ts, src/ui/CharacterBuilder.tsx, src/ui/InventoryPanel.tsx, src/ui/styles.css.
+- Tests run: `npx vitest run src/player/appearance.test.ts src/player/character.test.ts src/persistence/saveGame.test.ts` — 20 passed; `npx tsc -b` — clean; `npx vitest run` — 283 passed; `npm run build` — passed with existing Anthropic SDK browser-externalization and chunk-size warnings.
+- UI review: pending-human-test — create a custom character and try a pregen; confirm Looks preview and final Looks lines render as expected.
+- Blockers or coordination notes: Existing untracked lore/world source files remain untouched.
+
+## 2026-07-18 22:11 CDT - codex - feature/codex/character-appearance
+
+- Status: started
+- Summary: Add character appearance/looks descriptors for custom and pregenerated characters, with custom appearance controls and Strength-derived build wording.
+- Files changed: AGENT_CHANGELOG.md; planned src/player/{types,appearance,character,pregens}.ts, tests, and character/inventory UI.
+- Tests run: not run yet.
+- UI review: pending-human-test
+- Blockers or coordination notes: Working from a dedicated feature branch. Existing untracked lore/world source files will remain untouched.
+
 ## 2026-07-18 20:25 CDT - codex - feature/codex/event-map-highlights
 
 - Status: approved

@@ -166,6 +166,76 @@ export interface PlayerReputations {
   religions: ReputationEntry[];
 }
 
+export type SkinColor =
+  | 'porcelain'
+  | 'fair'
+  | 'olive'
+  | 'warm-brown'
+  | 'deep-brown'
+  | 'ebony'
+  | 'copper'
+  | 'ash-grey'
+  | 'green'
+  | 'red-bronze';
+
+export type HairColor =
+  | 'black'
+  | 'dark-brown'
+  | 'brown'
+  | 'auburn'
+  | 'red'
+  | 'blond'
+  | 'silver'
+  | 'white'
+  | 'blue-black'
+  | 'none';
+
+export type HairLength =
+  | 'shaved'
+  | 'close-cropped'
+  | 'short'
+  | 'shoulder-length'
+  | 'long'
+  | 'braided';
+
+export type FacialHair =
+  | 'clean-shaven'
+  | 'stubble'
+  | 'trimmed-beard'
+  | 'full-beard'
+  | 'mustache'
+  | 'none';
+
+export type EyeColor =
+  | 'black'
+  | 'brown'
+  | 'hazel'
+  | 'green'
+  | 'blue'
+  | 'grey'
+  | 'amber'
+  | 'gold'
+  | 'violet';
+
+export type RelativeHeight = 'very-short' | 'short' | 'average' | 'tall' | 'very-tall';
+export type Posture = 'upright' | 'relaxed' | 'guarded' | 'forward-leaning' | 'stooped' | 'formal';
+export type BodyBuild = 'slight' | 'lean' | 'balanced' | 'sturdy' | 'powerful' | 'massive';
+
+export interface CharacterAppearanceInput {
+  skinColor: SkinColor;
+  hairColor: HairColor;
+  hairLength: HairLength;
+  facialHair: FacialHair;
+  eyeColor: EyeColor;
+  relativeHeight: RelativeHeight;
+  posture: Posture;
+}
+
+export interface CharacterAppearance extends CharacterAppearanceInput {
+  build: BodyBuild;
+  descriptor: string;
+}
+
 export interface PlayerCharacter {
   id: string;
   name: string;
@@ -187,6 +257,7 @@ export interface PlayerCharacter {
   religionName: string;
   cultureId?: number;
   cultureName?: string;
+  appearance?: CharacterAppearance;
   abilityScores: AbilityScores;
   abilityModifiers: AbilityScores;
   proficiencyBonus: 2;
@@ -218,6 +289,7 @@ export interface CharacterBuildInput {
   religionId: number;
   abilityScores: AbilityScores;
   skillProficiencies?: Skill[];
+  appearance?: CharacterAppearanceInput;
 }
 
 export interface PregenCharacter {
