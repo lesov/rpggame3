@@ -2,6 +2,24 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-19 10:51 CDT - codex - feature/codex/scene-painter
+
+- Status: approved
+- Summary: Human tested Scene Painter, including the road/camp location fix, and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/scenePainter/prompt.test.ts src/scenePainter/claude.test.ts` — 8 passed; `npx tsc -b` — clean; `npx vitest run` — 303 passed; `npm run build` — passed as of ready-for-review entry.
+- UI review: approved-by-human (2026-07-19)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-19 09:58 CDT - codex - feature/codex/scene-painter
+
+- Status: ready-for-review
+- Summary: Added the Scene Painter prompt builder, Claude text wrapper, header button, modal, and styling. Fixed settlement detection so road/camp positions outside a city are not painted as the nearest/adjacent town square.
+- Files changed: AGENT_CHANGELOG.md, new src/scenePainter/prompt.ts, new src/scenePainter/claude.ts, new src/scenePainter/prompt.test.ts, new src/scenePainter/claude.test.ts, src/ui/App.tsx, new src/ui/ScenePainterModal.tsx, src/ui/styles.css.
+- Tests run: `npx vitest run src/scenePainter/prompt.test.ts src/scenePainter/claude.test.ts` — 8 passed; `npx tsc -b` — clean; `npx vitest run` — 303 passed; `npm run build` — passed with existing Anthropic SDK browser-externalization and chunk-size warnings.
+- UI review: pending-human-test — create/load a character, click Scene Painter next to Save / Load, confirm the context matches the current place/weather/time/party; specifically retest making camp after a travel interruption outside a city.
+- Blockers or coordination notes: Existing stored key is an Anthropic text-generation key; implementation generates a detailed painter prompt/description and leaves actual bitmap generation as a future provider extension. Dev server running at http://localhost:5173/.
+
 ## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/quest-burned-hall
 
 - Status: approved
