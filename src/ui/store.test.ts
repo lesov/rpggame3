@@ -7,7 +7,7 @@ import type { WorldEvent } from '../sim/events';
 import { eventHighlightFor, initialState, makeReducer, settlementVendorsAt } from './store';
 import { makeTestCharacter } from '../combat/fixtures';
 import { generateLoot } from '../combat/loot';
-import { planTravel, type TravelDestination } from '../player/travel';
+import { planTravel, seaPortDestinations, type TravelDestination } from '../player/travel';
 import { voselsOf, quantityOf } from '../economy/money';
 
 let wd: WorldData;
@@ -192,6 +192,47 @@ describe('game clock state', () => {
     expect(s.player?.quests[0].steps.map((step) => step.status)).toEqual(['completed', 'completed', 'active']);
     expect(s.player?.quests[0].responseReadyAt).toBeUndefined();
     expect(s.player?.inventory.find((item) => item.id === 'guild-response-letter')?.note).toContain(quest.origin.placeName);
+  });
+
+  it('sails port to port for a fare with no encounters, and blocks unpaid passage', () => {
+    const reducer = makeReducer(wd);
+    const domasalyesi = wd.world.burgs.find((b) => b.name === 'Domasalyesi')!;
+    const atPort = {
+      ...makeTestCharacter('fighter'),
+      location: {
+        cellId: domasalyesi.cell,
+        x: domasalyesi.x,
+        y: domasalyesi.y,
+        stateId: domasalyesi.state,
+        stateName: 'Test State',
+        placeName: domasalyesi.name,
+        reason: 'test',
+      },
+    };
+    const seaDests = seaPortDestinations(wd, atPort);
+    const oladar = seaDests.find((d) => d.name === 'Oladar')!;
+    const plan = planTravel(wd, atPort, oladar, 'boat', false, START_TIME);
+    expect(plan.mode).toBe('boat');
+    expect(plan.fareVosels).toBeGreaterThanOrEqual(10);
+
+    const withVosels = (p: typeof atPort, n: number) => ({
+      ...p,
+      inventory: p.inventory.map((it) => (it.id === 'vosels' ? { ...it, quantity: n } : it)),
+    });
+
+    // Rich traveler: fare deducted, arrives, never intercepted.
+    const rich = withVosels(atPort, plan.fareVosels! + 25);
+    let s = reducer(initialState(wd), { type: 'setPlayer', player: rich });
+    s = reducer(s, { type: 'travel', plan });
+    expect(s.pendingEncounter).toBeNull();
+    expect(s.screen).toBe('map');
+    expect(s.player?.location.placeName).toBe('Oladar');
+    expect(voselsOf(s.player!)).toBe(25);
+
+    // Poor traveler: nothing happens.
+    const poor = withVosels(atPort, 5);
+    const before = reducer(initialState(wd), { type: 'setPlayer', player: poor });
+    expect(reducer(before, { type: 'travel', plan })).toBe(before);
   });
 
   it('runs the burned-hall aftermath: fire state, feed entry, completion, and the stabilize quest', () => {

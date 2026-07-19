@@ -4,6 +4,7 @@ import path from 'node:path';
 import { buildWorldData, type WorldData } from '../data/worldLoader';
 import type { PlayerCharacter } from './types';
 import {
+  boatFareVosels,
   defaultTravelModeFor,
   elapsedMinutesForTravel,
   offroadBiomeMultiplier,
@@ -11,6 +12,7 @@ import {
   provisionsNeeded,
   nearbyTravelDestinations,
   roadRouteFor,
+  seaPortDestinations,
   type TravelDestination,
 } from './travel';
 
@@ -287,6 +289,17 @@ describe('travel planning', () => {
     expect(destinations.every((d) => d.kind === 'burg' || d.kind === 'marker')).toBe(true);
   });
 
+  it('excludes random-encounter markers from destinations but keeps other markers', () => {
+    const wd = makeTravelWorld();
+    wd.world.markers.push(
+      { i: 900, type: 'encounters', icon: '❗', x: 50, y: 2, cell: 1, name: 'Wandering Peril', legend: 'test' },
+      { i: 901, type: 'inns', icon: '🍻', x: 52, y: 2, cell: 1, name: 'The Salted Eel', legend: 'test' },
+    );
+    const destinations = nearbyTravelDestinations(wd, makePlayer(), 75, 8);
+    expect(destinations.map((d) => d.name)).not.toContain('Wandering Peril');
+    expect(destinations.map((d) => d.name)).toContain('The Salted Eel');
+  });
+
   it('hides land-unreachable non-ports but allows boat travel from port to port', () => {
     const wd = makeTravelWorld();
     const destinations = nearbyTravelDestinations(wd, makePlayer(), 200, 8);
@@ -299,25 +312,52 @@ describe('travel planning', () => {
     expect(plan.routeGroup).toBe('searoutes');
   });
 
-  it('uses continuous sailing time and boat-specific labels for boat travel', () => {
+  it('uses D&D sailing-ship pace: 2 mph, continuous sailing, boat labels', () => {
     const wd = makeTravelWorld();
     const destinations = nearbyTravelDestinations(wd, makePlayer(), 200, 8);
     const islandPort = destinations.find((d) => d.name === 'Island Port');
     const plan = planTravel(wd, makePlayer(), islandPort!, 'boat', true, { hour: 8, minute: 0 });
     expect(plan.mode).toBe('boat');
     expect(plan.dayOnly).toBe(false);
-    expect(plan.elapsedMinutes).toBe(Math.ceil(plan.travelHours * 60));
+    expect(plan.paceMph).toBe(2);
+    // travelHours is display-rounded to 0.1 h; elapsedMinutes is exact.
+    expect(Math.abs(plan.elapsedMinutes - plan.travelHours * 60)).toBeLessThanOrEqual(3);
     expect(plan.activeTravelLabel).toBe('sailing hr');
     expect(plan.paceDetail).toContain('sails day and night');
+    expect(plan.paceDetail).toContain('no encounters at sea');
   });
 
-  it('keeps broader boat ports available when nearby land destinations fill the normal list', () => {
+  it('charges a distance-based fare: 10 vosels plus 3 per mile', () => {
+    expect(boatFareVosels(0)).toBe(10);
+    expect(boatFareVosels(100)).toBe(310);
+    const wd = makeTravelWorld();
+    const destinations = nearbyTravelDestinations(wd, makePlayer(), 200, 8);
+    const islandPort = destinations.find((d) => d.name === 'Island Port');
+    const plan = planTravel(wd, makePlayer(), islandPort!, 'boat', false, { hour: 8, minute: 0 });
+    expect(plan.fareVosels).toBe(boatFareVosels(islandPort!.distanceMi * 1.25));
+    expect(plan.summary).toContain(`fare ${plan.fareVosels} vosels`);
+    // Land legs carry no fare.
+    const town = destinations.find((d) => d.name === 'Near Town') ?? destinations.find((d) => d.landReachable)!;
+    expect(planTravel(wd, makePlayer(), town, 'road', true, { hour: 8, minute: 0 }).fareVosels).toBeUndefined();
+  });
+
+  it('lists every other port as a sea-passage destination when at a port', () => {
+    const wd = makeTravelWorld();
+    const seaDests = seaPortDestinations(wd, makePlayer());
+    expect(seaDests.map((d) => d.name)).toContain('Island Port');
+    expect(seaDests.every((d) => d.boatReachable)).toBe(true);
+    expect(seaDests.every((d, i, arr) => i === 0 || arr[i - 1].distanceMi <= d.distanceMi)).toBe(true);
+    // Away from any port there is no sea passage.
+    const inland = { ...makePlayer(), location: { ...makePlayer().location, x: 500, y: 500, cellId: 0 } };
+    expect(seaPortDestinations(wd, inland)).toEqual([]);
+  });
+
+  it('offers boat passage between ports even when a land route exists', () => {
     const wd = makeTravelWorld();
     addLocalCrowding(wd);
-    const destinations = nearbyTravelDestinations(wd, makePlayer(), 20, 4);
-    expect(destinations.length).toBeGreaterThan(4);
-    const islandPort = destinations.find((d) => d.name === 'Island Port');
-    expect(islandPort?.boatReachable).toBe(true);
+    const seaDests = seaPortDestinations(wd, makePlayer());
+    expect(seaDests.length).toBeGreaterThan(0);
+    for (const dest of seaDests) expect(dest.boatReachable).toBe(true);
   });
 
   it('lists Oladar as a boat destination from Domasalyesi in the world data', () => {
@@ -338,8 +378,8 @@ describe('travel planning', () => {
         reason: 'test',
       },
     };
-    const destinations = nearbyTravelDestinations(wd, player, 120, 12);
-    const oladar = destinations.find((d) => d.name === 'Oladar');
+    const seaDests = seaPortDestinations(wd, player);
+    const oladar = seaDests.find((d) => d.name === 'Oladar');
     expect(oladar?.boatReachable).toBe(true);
     expect(oladar?.landReachable).toBe(false);
   });

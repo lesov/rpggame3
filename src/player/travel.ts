@@ -39,6 +39,8 @@ export interface TravelPlan {
   provisionsNeeded: number;
   provisionsAvailable: number;
   insufficientProvisions: boolean;
+  /** Passage fee in vosels; set only for boat legs. */
+  fareVosels?: number;
   summary: string;
 }
 
@@ -53,12 +55,19 @@ export function defaultTravelModeFor(destination: TravelDestination, roadAvailab
 const ROAD_ACCESS_MI = 20;
 const ROAD_MPH = 3.2;
 const TRAIL_MPH = 2.7;
-const BOAT_MPH = 5;
+/** D&D sailing ship: 2 mph, sailing day and night (48 miles per day). */
+const SAILING_SHIP_MPH = 2;
 const OFFROAD_BASE_MPH = 2.1;
 const DAYLIGHT_START = 6;
 const DAYLIGHT_END = 18;
-const BOAT_PORT_RADIUS_MI = 900;
-const BOAT_PORT_LIMIT = 8;
+
+export const BOAT_FARE_BASE_VOSELS = 10;
+export const BOAT_FARE_VOSELS_PER_MILE = 3;
+
+/** Passage fare on a crewed ship: base price plus a per-mile rate. */
+export function boatFareVosels(distanceMi: number): number {
+  return BOAT_FARE_BASE_VOSELS + Math.round(BOAT_FARE_VOSELS_PER_MILE * distanceMi);
+}
 
 const BIOME_MULTIPLIER: Record<string, number> = {
   Marine: 3,
@@ -113,7 +122,10 @@ function canTravelByBoat(wd: WorldData, player: PlayerCharacter, item: NearbyIte
 }
 
 function isPointDestination(item: NearbyItem): item is NearbyItem & { kind: TravelDestinationKind } {
-  return item.kind === 'burg' || item.kind === 'marker';
+  // Random-encounter markers are not places to travel to — they exist to fuel
+  // chance encounters on the road. Every other marker kind stays a destination.
+  if (item.kind === 'marker') return item.marker?.type !== 'encounters';
+  return item.kind === 'burg';
 }
 
 export function roadRouteFor(wd: WorldData, from: { x: number; y: number }, to: { x: number; y: number }) {
@@ -222,7 +234,6 @@ function destinationFromNearby(item: NearbyItem & { kind: TravelDestinationKind 
 
 export function nearbyTravelDestinations(wd: WorldData, player: PlayerCharacter, radiusMi = 120, limit = 12): TravelDestination[] {
   const originCellId = player.location.cellId;
-  const originPort = nearestPort(wd, player.location.x, player.location.y);
   const seen = new Set<string>();
   const out: TravelDestination[] = [];
   const radii = [radiusMi, 180, 260, 400, 650].filter((r, i, arr) => r >= radiusMi && arr.indexOf(r) === i);
@@ -237,7 +248,7 @@ export function nearbyTravelDestinations(wd: WorldData, player: PlayerCharacter,
     })) {
       const cellId = item.cellId!;
       const land = landReachable(wd, originCellId, cellId);
-      const boat = !land && canTravelByBoat(wd, player, item);
+      const boat = canTravelByBoat(wd, player, item);
       if (!land && !boat) continue;
       const key = destinationKey(item.kind, cellId, item.name);
       if (seen.has(key)) continue;
@@ -278,39 +289,36 @@ export function nearbyTravelDestinations(wd: WorldData, player: PlayerCharacter,
     if (out.length >= Math.max(2, limit)) break;
   }
 
-  if (originPort) {
-    for (const { burg, distanceMi } of burgsByDistance) {
-      if (!burg.port || burg.i === originPort.burgId || distanceMi > BOAT_PORT_RADIUS_MI) continue;
-      const land = landReachable(wd, originCellId, burg.cell);
-      if (land) continue;
-      const key = destinationKey('burg', burg.cell, burg.name);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({
-        id: `burg-${burg.cell}-${out.length}`,
+  return out.sort((a, b) => a.distanceMi - b.distanceMi).slice(0, limit);
+}
+
+/**
+ * Sea passage: from a port settlement the player can book passage to any
+ * other port on the map. Empty when the player is not at a port.
+ */
+export function seaPortDestinations(wd: WorldData, player: PlayerCharacter): TravelDestination[] {
+  const originPort = nearestPort(wd, player.location.x, player.location.y);
+  if (!originPort) return [];
+  const originCellId = player.location.cellId;
+  return wd.world.burgs
+    .filter((burg) => burg.port && burg.i !== originPort.burgId)
+    .map((burg) => {
+      const distanceMi = pointDistanceMi(wd, player.location.x, player.location.y, burg.x, burg.y);
+      return {
+        id: `sea-${burg.cell}`,
         name: burg.name,
-        detail: `${burg.tier ?? 'settlement'}, port · pop ${burg.population.toLocaleString()} · port passage`,
-        kind: 'burg',
+        detail: `${burg.tier ?? 'settlement'}${burg.capital ? ', capital' : ''}, port · pop ${burg.population.toLocaleString()} · sea passage`,
+        kind: 'burg' as const,
         icon: burg.capital ? '👑' : '⚓',
         x: burg.x,
         y: burg.y,
         cellId: burg.cell,
         distanceMi,
-        landReachable: false,
+        landReachable: landReachable(wd, originCellId, burg.cell),
         boatReachable: true,
-      });
-    }
-  }
-
-  const landDestinations = out
-    .filter((d) => !d.boatReachable)
-    .sort((a, b) => a.distanceMi - b.distanceMi)
-    .slice(0, limit);
-  const boatDestinations = out
-    .filter((d) => d.boatReachable)
-    .sort((a, b) => a.distanceMi - b.distanceMi)
-    .slice(0, originPort ? BOAT_PORT_LIMIT : 0);
-  return [...landDestinations, ...boatDestinations].sort((a, b) => a.distanceMi - b.distanceMi);
+      };
+    })
+    .sort((a, b) => a.distanceMi - b.distanceMi);
 }
 
 export function planTravel(
@@ -339,7 +347,7 @@ export function planTravel(
   const mph = (effectiveMode === 'road' && route
     ? route.group === 'roads' ? ROAD_MPH : TRAIL_MPH
     : effectiveMode === 'boat'
-      ? BOAT_MPH
+      ? SAILING_SHIP_MPH
     : OFFROAD_BASE_MPH / biomeMultiplier) * loadFactor;
   const travelDayOnly = effectiveMode === 'boat' ? false : dayOnly;
   const travelHours = distanceMi / mph;
@@ -354,8 +362,9 @@ export function planTravel(
       ? roadLabel
     : 'Off-road walking';
   const loadNote = loadFactor < 0.999 ? `, ${loadFactor.toFixed(2)}x under load` : '';
+  const fareVosels = effectiveMode === 'boat' ? boatFareVosels(distanceMi) : undefined;
   const paceDetail = effectiveMode === 'boat'
-    ? `${paceLabel}, ${mph.toFixed(1)} mph average; sails day and night`
+    ? `${paceLabel}, ${mph.toFixed(1)} mph average; sails day and night; no encounters at sea`
     : effectiveMode === 'road' && route
       ? `${paceLabel}, ${mph.toFixed(1)} mph average${loadNote}`
     : `${paceLabel}, ${mph.toFixed(1)} mph after ${biomeMultiplier.toFixed(2)}x terrain${loadNote}`;
@@ -384,6 +393,9 @@ export function planTravel(
     provisionsNeeded: needed,
     provisionsAvailable: available,
     insufficientProvisions: available < needed,
-    summary: `${Math.round(distanceMi)} mi ${modeLabel}; ${Math.ceil(elapsedMinutes / 60)} elapsed hours`,
+    fareVosels,
+    summary:
+      `${Math.round(distanceMi)} mi ${modeLabel}; ${Math.ceil(elapsedMinutes / 60)} elapsed hours` +
+      (fareVosels !== undefined ? `; fare ${fareVosels} vosels` : ''),
   };
 }
