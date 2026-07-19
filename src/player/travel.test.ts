@@ -81,6 +81,12 @@ function makeTravelWorld(): WorldData {
         return x < 25 ? 0 : x < 75 ? 1 : 2;
       },
       cellsInRect: () => cells.map((cell) => cell.i),
+      nearestMatchingCell: (x: number, y: number, accept: (id: number) => boolean) => {
+        const matches = cells
+          .filter((cell) => accept(cell.i))
+          .sort((a, b) => Math.hypot(a.p[0] - x, a.p[1] - y) - Math.hypot(b.p[0] - x, b.p[1] - y));
+        return matches[0]?.i ?? null;
+      },
     },
     burgById: new Map(burgs.map((b) => [b.i, b])),
     stateById: new Map([[1, { i: 1, name: 'Test', fullName: 'Test State', type: 'Generic', color: '#f00', capital: 1, center: 0, pole: [0, 0], culture: 1, expansionism: 1, neighbors: [], diplomacy: [], campaigns: [], urban: 1, rural: 1, cellCount: 3 }]]),
@@ -332,6 +338,19 @@ describe('travel planning', () => {
     const mememil = wd.world.burgs.find((b) => b.name === 'Mememil')!;
     const route = roadRouteFor(wd, sterzhkov, mememil);
     expect(route).not.toBeNull();
+  });
+
+  it('rescues a player stranded on a water cell by measuring reach from the nearest shore', () => {
+    const wd = makeTravelWorld();
+    // A water cell a few miles off the coast near the origin.
+    wd.geometry.cells.push({
+      i: 5, p: [5, 8], poly: [], c: [0], h: 10, t: -1, f: 9, biome: 0, state: 0,
+      province: 0, culture: 0, religion: 0, pop: 0, burg: 0, r: 0, temp: 10, prec: 20,
+    } as (typeof wd.geometry.cells)[number]);
+    const stranded = { ...makePlayer(), location: { ...makePlayer().location, cellId: 5, x: 5, y: 8 } };
+    const destinations = nearbyTravelDestinations(wd, stranded, 120, 12);
+    expect(destinations.length).toBeGreaterThan(0);
+    expect(destinations.map((d) => d.name)).toContain('Near Town');
   });
 
   it('excludes random-encounter markers from destinations but keeps other markers', () => {

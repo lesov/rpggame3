@@ -2,6 +2,24 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/no-water-strand
+
+- Status: approved
+- Summary: Human approver tested the water-strand fix and stated "my check passed, merge it" — explicit UI approval and merge authorization. Merging feature/claude-fable-5/no-water-strand into main locally with --no-ff.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 320 passed; `npx tsc -b` clean; `npm run build` passed (as of ready-for-review entry).
+- UI review: approved-by-human (2026-07-19)
+- Blockers or coordination notes: No release tag requested. Not pushing — human pushes main manually.
+
+## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/no-water-strand
+
+- Status: started
+- Summary: Fix per approved plan: travel-encounter interceptions (and thus "make camp" spots) can land on water cells when a straight leg crosses a bay, stranding the player with zero travel destinations. Snap interceptions to the nearest land cell in rollTravelEncounters; compute destination reachability from the nearest shore when the player is already standing on water (rescues existing saves).
+- Files changed: src/map/hittest.ts (CellIndex.nearestMatchingCell — expanding-ring nearest-cell search over the existing bins), src/data/worldLoader.ts (nearestLandCellId helper), src/travel/encounter/run.ts (rollTravelEncounters snaps a water-cell interception to the nearest shore — cell id and x/y — before returning; encounter odds unchanged), src/player/travel.ts (effectiveOriginCellId: when the player's cell is water, destination reachability in nearbyTravelDestinations/seaPortDestinations is measured from the nearest land cell — rescues already-stranded saves), src/travel/encounter/run.test.ts (+1: Domasalyesi→Oladar leg verified to cross water; 25-seed sweep asserts every interception lands on h>=20), src/player/travel.test.ts (+1: player standing on a water cell still gets land destinations; fixture cellIndex mock gains nearestMatchingCell), AGENT_CHANGELOG.md.
+- Tests run: `npx vitest run` — 320 tests / 40 files, all passed. `npx tsc -b` clean. `npm run build` passed. Headless Chromium (save injected with the player standing on a water cell off the Domasalyesi coast — the previously-stranding state): Travel tab lists 12 destinations (was zero), travel out succeeds; zero console errors (screenshots in scratchpad).
+- UI review: pending-human-test — travel across a bay until an encounter fires, choose "Make camp here instead": the camp should now sit on the shore and the Travel list should stay populated. An existing stranded save should also recover on load.
+- Blockers or coordination notes: none.
+
 ## 2026-07-19 18:20 CDT - codex - main
 
 - Status: merged

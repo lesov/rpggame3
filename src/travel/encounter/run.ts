@@ -7,7 +7,7 @@
  * Fully deterministic in (seed, pacing, world, plan): the same leg always
  * plays out the same way, so it is straightforward to unit-test.
  */
-import type { WorldData } from '../../data/worldLoader';
+import { isWaterCell, nearestLandCellId, type WorldData } from '../../data/worldLoader';
 import type { PlayerCharacter } from '../../player/types';
 import type { TravelPlan } from '../../player/travel';
 import { findReputation } from '../../player/reputation';
@@ -194,14 +194,27 @@ export function rollTravelEncounters(input: EncounterInput): EncounterOutcome {
       const chance = hostileChance(disp);
       const hostile = rand() < chance;
       const actor = buildActor(kind, wp.table.biomeId, hostile, rand(), wp.table);
+      // A straight leg can cross a bay; never intercept (or camp) the player
+      // on a water cell — snap the meeting point to the nearest shore.
+      let { x, y, cellId } = wp;
+      const wpCell = input.wd.geometry.cells[cellId];
+      if (wpCell && isWaterCell(wpCell)) {
+        const landId = nearestLandCellId(input.wd, x, y);
+        if (landId !== null) {
+          const land = input.wd.geometry.cells[landId];
+          cellId = landId;
+          x = land.p[0];
+          y = land.p[1];
+        }
+      }
       return {
         kind: 'encounter',
         encounter: {
           atFraction: wp.frac,
           elapsedMinutes: Math.round(input.plan.elapsedMinutes * wp.frac),
-          x: wp.x,
-          y: wp.y,
-          cellId: wp.cellId,
+          x,
+          y,
+          cellId,
           actor,
           lambda,
           hostileChance: chance,

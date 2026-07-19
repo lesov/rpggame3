@@ -83,6 +83,38 @@ describe('rollTravelEncounters', () => {
     expect(e.actor.statblockId.length).toBeGreaterThan(0);
   });
 
+  it('never intercepts the player on a water cell, even when the leg crosses a bay', () => {
+    const from = wd.world.burgs.find((b) => b.name === 'Domasalyesi')!;
+    const to = wd.world.burgs.find((b) => b.name === 'Oladar')!;
+    // Sanity: the straight line between these two really does cross water.
+    let crossesWater = false;
+    for (let i = 1; i < 40; i++) {
+      const t = i / 40;
+      const cellId = wd.cellIndex.cellAt(from.x + (to.x - from.x) * t, from.y + (to.y - from.y) * t);
+      if (cellId !== null && wd.geometry.cells[cellId].h < 20) crossesWater = true;
+    }
+    expect(crossesWater).toBe(true);
+
+    const seaPlayer = {
+      ...player(),
+      location: { ...player().location, cellId: from.cell, x: from.x, y: from.y },
+    };
+    const seaDest: TravelDestination = {
+      id: 'dest', name: to.name, detail: '', kind: 'burg',
+      x: to.x, y: to.y, cellId: to.cell,
+      distanceMi: 200, landReachable: false, boatReachable: false,
+    };
+    const seaLeg = plan({ destination: seaDest, travelHours: 300, elapsedMinutes: 300 * 60, distanceMi: 200 });
+    let intercepted = 0;
+    for (const seed of Array.from({ length: 25 }, (_, i) => i * 89 + 1)) {
+      const out = rollTravelEncounters(input({ seed, player: seaPlayer, plan: seaLeg }));
+      if (out.kind !== 'encounter') continue;
+      intercepted++;
+      expect(wd.geometry.cells[out.encounter.cellId].h).toBeGreaterThanOrEqual(20);
+    }
+    expect(intercepted).toBeGreaterThan(0);
+  });
+
   it('a rising pity timer makes an encounter no less likely than a fresh one', () => {
     // With a warmed pity timer the effective rate is higher, so over many seeds
     // the encounter share should not drop.
