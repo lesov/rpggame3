@@ -39,7 +39,7 @@ interface EncodedEconomy {
 }
 
 /** Everything in GameState except the economy Map (encoded) and render-only fields. */
-type SerializedState = Omit<GameState, 'economy' | 'jump' | 'focus'> & { economy: EncodedEconomy };
+type SerializedState = Omit<GameState, 'economy' | 'jump' | 'focus' | 'eventHighlight'> & { economy: EncodedEconomy };
 
 export interface SaveMeta {
   savedAt: number; // real-world epoch ms
@@ -101,7 +101,7 @@ function locationName(state: GameState, wd: WorldData): string {
 }
 
 export function serializeGame(state: GameState, wd: WorldData): SaveEnvelope {
-  const { economy, jump: _jump, focus: _focus, ...rest } = state;
+  const { economy, jump: _jump, focus: _focus, eventHighlight: _eventHighlight, ...rest } = state;
   const meta: SaveMeta = {
     savedAt: Date.now(),
     inGameDate: state.date,
@@ -131,6 +131,7 @@ export function deserializeGame(env: SaveEnvelope, wd: WorldData): GameState | n
     economy: decodeEconomy(economy, wd),
     jump: null,
     focus: null,
+    eventHighlight: null,
   };
 }
 

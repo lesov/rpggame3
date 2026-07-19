@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-18 20:25 CDT - codex - feature/codex/event-map-highlights
+
+- Status: approved
+- Summary: Human tested world-event map highlights, including clearing highlight/focus circles when leaving the World events tab, and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 278 passed; `npm run build` — passed as of ready-for-review entry; follow-up `npx vitest run src/ui/store.test.ts` — 19 passed; follow-up `npx tsc -b` — clean.
+- UI review: approved-by-human (2026-07-18)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-18 20:11 CDT - codex - feature/codex/event-map-highlights
+
+- Status: ready-for-review
+- Summary: World events feed clicks now dispatch a map-highlight action that jumps to the event and draws a semi-transparent area circle without creating a persistent cell selection or focus ring. Burg/cell events highlight their point with kind-relative radius; anchor events are larger; state/war events without a point derive a rough combined-state circle. Event highlights are render-only, excluded from save serialization, and clear when leaving the World events tab.
+- Files changed: AGENT_CHANGELOG.md, src/ui/store.tsx, src/ui/EventFeed.tsx, src/ui/MapView.tsx, src/map/renderer.ts, src/persistence/saveGame.ts, src/ui/store.test.ts.
+- Tests run: `npx vitest run src/ui/store.test.ts src/persistence/saveGame.test.ts` — 23 passed; `npx tsc -b` — clean; `npx vitest run` — 278 passed; `npm run build` — passed with existing Anthropic SDK browser-externalization and chunk-size warnings; follow-up `npx vitest run src/ui/store.test.ts` — 19 passed; follow-up `npx tsc -b` — clean; second follow-up `npx vitest run src/ui/store.test.ts` — 19 passed; second follow-up `npx tsc -b` — clean; focus-ring follow-up `npx vitest run src/ui/store.test.ts` — 19 passed; focus-ring follow-up `npx tsc -b` — clean.
+- UI review: pending-human-test — open World events, click a located or war/state event, and confirm the map jumps and displays an appropriately sized translucent circle.
+- Blockers or coordination notes: Existing untracked lore/world source files remain untouched.
+
+## 2026-07-18 20:08 CDT - codex - feature/codex/event-map-highlights
+
+- Status: started
+- Summary: Add map highlights for world events from the World events feed: clicking an event should jump to its location and draw a semi-transparent circle sized to local, anchor, war, or multi-state scope.
+- Files changed: AGENT_CHANGELOG.md; planned src/ui/store.tsx, src/ui/EventFeed.tsx, src/ui/MapView.tsx, src/map/renderer.ts, tests.
+- Tests run: not run yet.
+- UI review: pending-human-test
+- Blockers or coordination notes: Working from a dedicated feature branch. Existing untracked lore/world source files will remain untouched.
+
 ## 2026-07-18 18:53 CDT - codex - feature/codex/biome-encounters
 
 - Status: approved

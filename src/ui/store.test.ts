@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { buildWorldData, type WorldData } from '../data/worldLoader';
 import { MINUTES_PER_DAY, START_DATE, START_TIME, toOrdinal } from '../sim/calendar';
-import { initialState, makeReducer, settlementVendorsAt } from './store';
+import type { WorldEvent } from '../sim/events';
+import { eventHighlightFor, initialState, makeReducer, settlementVendorsAt } from './store';
 import { makeTestCharacter } from '../combat/fixtures';
 import { generateLoot } from '../combat/loot';
 import { planTravel, type TravelDestination } from '../player/travel';
@@ -58,6 +59,95 @@ describe('game clock state', () => {
     const next = reducer(initialState(wd), { type: 'openCodex', entryId: 'duhi-troupe' });
     expect(next.panelTab).toBe('codex');
     expect(next.selectedCodexId).toBe('duhi-troupe');
+  });
+
+  it('builds event highlights for local, anchor, and state-scope events', () => {
+    const burg = wd.world.burgs[0];
+    const local: WorldEvent = {
+      id: 'test-local-event',
+      ord: 1,
+      date: START_DATE,
+      title: 'Local trouble',
+      kind: 'story',
+      location: { burg: burg.i },
+    };
+    const anchor: WorldEvent = { ...local, id: 'test-anchor-event', kind: 'anchor', anchor: true, title: 'Era trouble' };
+    const states = [...new Set(wd.world.burgs.map((b) => b.state).filter((id) => id > 0))].slice(0, 2);
+    const war: WorldEvent = {
+      id: 'test-war-event',
+      ord: 2,
+      date: START_DATE,
+      title: 'Border war',
+      kind: 'war',
+      states,
+    };
+
+    const localHighlight = eventHighlightFor(wd, local)!;
+    const anchorHighlight = eventHighlightFor(wd, anchor)!;
+    const warHighlight = eventHighlightFor(wd, war)!;
+
+    expect(localHighlight.x).toBe(burg.x);
+    expect(localHighlight.y).toBe(burg.y);
+    expect(anchorHighlight.radiusWorld).toBeGreaterThan(localHighlight.radiusWorld);
+    expect(warHighlight.radiusWorld).toBeGreaterThan(anchorHighlight.radiusWorld);
+    expect(warHighlight.kind).toBe('war');
+  });
+
+  it('showEventOnMap jumps to the event and stores a map highlight', () => {
+    const reducer = makeReducer(wd);
+    const burg = wd.world.burgs[0];
+    const event: WorldEvent = {
+      id: 'test-clicked-event',
+      ord: 1,
+      date: START_DATE,
+      title: 'Clicked event',
+      kind: 'story',
+      location: { burg: burg.i },
+    };
+    const next = reducer(initialState(wd), { type: 'showEventOnMap', event });
+    expect(next.eventHighlight?.id).toBe(event.id);
+    expect(next.eventHighlight?.radiusWorld).toBeGreaterThan(0);
+    expect(next.jump?.x).toBe(burg.x);
+    expect(next.jump?.y).toBe(burg.y);
+    expect(next.focus).toBeNull();
+    expect(next.selection).toBeNull();
+    expect(next.panelTab).toBe('events');
+  });
+
+  it('clears event highlights when leaving the World events tab', () => {
+    const reducer = makeReducer(wd);
+    const burg = wd.world.burgs[0];
+    const event: WorldEvent = {
+      id: 'test-tab-clear-event',
+      ord: 1,
+      date: START_DATE,
+      title: 'Clicked event',
+      kind: 'story',
+      location: { burg: burg.i },
+    };
+    let state = reducer({ ...initialState(wd), panelTab: 'events' }, { type: 'showEventOnMap', event });
+    expect(state.eventHighlight?.id).toBe(event.id);
+    expect(state.focus).toBeNull();
+    expect(state.selection).toBeNull();
+
+    state = reducer({ ...state, focus: { x: burg.x, y: burg.y } }, { type: 'setTab', tab: 'inventory' });
+    expect(state.eventHighlight).toBeNull();
+    expect(state.focus).toBeNull();
+    expect(state.selection).toBeNull();
+  });
+
+  it('showEventOnMap ignores events with no map target', () => {
+    const reducer = makeReducer(wd);
+    const state = initialState(wd);
+    const event: WorldEvent = {
+      id: 'test-locationless-event',
+      ord: 1,
+      date: START_DATE,
+      title: 'No place',
+      kind: 'story',
+    };
+    expect(eventHighlightFor(wd, event)).toBeNull();
+    expect(reducer(state, { type: 'showEventOnMap', event })).toBe(state);
   });
 
   it('setting a newly created player keeps normal map gameplay instead of starting combat', () => {

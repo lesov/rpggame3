@@ -23,6 +23,7 @@ export interface RenderOptions {
 export interface RenderExtras {
   selection?: { x: number; y: number; cellId: number };
   focus?: { x: number; y: number };
+  eventHighlight?: { x: number; y: number; radiusWorld: number; kind: string; anchor?: boolean };
   travelTarget?: { x: number; y: number; name: string; kind: 'burg' | 'marker' };
   player?: { x: number; y: number; name: string };
 }
@@ -201,6 +202,36 @@ export class MapRenderer {
   ) {
     const onScreen = (sx: number, sy: number, pad = 30) =>
       sx > -pad && sy > -pad && sx < viewW + pad && sy < viewH + pad;
+
+    // Event area highlight
+    if (extras.eventHighlight) {
+      const [sx, sy] = this.toScreen(view, extras.eventHighlight.x, extras.eventHighlight.y);
+      const maxR = Math.max(viewW, viewH) * 0.78;
+      const r = Math.min(Math.max(extras.eventHighlight.radiusWorld * view.k, 16), maxR);
+      const isWar = extras.eventHighlight.kind === 'war';
+      const isAnchor = Boolean(extras.eventHighlight.anchor);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fillStyle = isWar
+        ? 'rgba(198, 72, 54, 0.22)'
+        : isAnchor
+          ? 'rgba(242, 193, 78, 0.24)'
+          : 'rgba(90, 155, 212, 0.22)';
+      ctx.fill();
+      ctx.lineWidth = isAnchor || isWar ? 2.5 : 2;
+      ctx.strokeStyle = isWar
+        ? 'rgba(239, 113, 91, 0.82)'
+        : isAnchor
+          ? 'rgba(242, 193, 78, 0.86)'
+          : 'rgba(137, 190, 235, 0.82)';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+      ctx.fillStyle = isWar ? '#ef715b' : isAnchor ? '#f2c14e' : '#89beeb';
+      ctx.fill();
+      ctx.restore();
+    }
 
     // Burgs
     for (const b of this.wd.world.burgs) {
