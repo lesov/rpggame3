@@ -23,6 +23,7 @@ export function InventoryPanel() {
         <h3>{player.name}</h3>
         <div className="kv"><span>Class</span><span>Level 1 {player.className}</span></div>
         <div className="kv"><span>Guild rank</span><span>{player.guildRank} · Adventurers' Guild</span></div>
+        <div className="kv"><span>Looks</span><span>{player.appearance?.descriptor ?? 'No appearance recorded.'}</span></div>
         <div className="kv"><span>Location</span><span>{player.location.placeName}, {player.location.stateName}</span></div>
         <div className="kv"><span>Armor Class</span><span>{player.armorClass}</span></div>
         <div className="kv"><span>Weapon</span><span>{equippedWeapon?.name ?? 'unarmed'}</span></div>
