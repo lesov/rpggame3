@@ -2,6 +2,24 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-19 18:20 CDT - codex - feature/codex/bandit-toll
+
+- Status: approved
+- Summary: Human tested the bandit toll prompt, including explicit Persuasion/Sleight of Hand roll step and ability labels, and stated "everything is checked ok", explicitly requesting local merge and saying they will push manually.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run src/ui/store.test.ts` — 28 passed; `npx tsc -b` — clean; `npx vitest run` — 318 passed; `npm run build` — passed as of ready-for-review entry.
+- UI review: approved-by-human (2026-07-19)
+- Blockers or coordination notes: Proceeding to commit feature branch and merge into main locally. Do not push; human will push manually.
+
+## 2026-07-19 18:05 CDT - codex - feature/codex/bandit-toll
+
+- Status: ready-for-review
+- Summary: Follow-up from human UI test: make Persuasion/Sleight of Hand toll attempts explicit two-step rolls instead of auto-resolving on option click, and label each option with its governing ability.
+- Files changed: AGENT_CHANGELOG.md, src/ui/store.tsx, src/ui/EncounterModal.tsx, src/ui/styles.css, src/persistence/saveGame.ts, src/ui/store.test.ts.
+- Tests run: `npx vitest run src/ui/store.test.ts` — 28 passed; `npx tsc -b` — clean; `npx vitest run` — 318 passed; `npm run build` — passed with existing Anthropic SDK browser-externalization and chunk-size warnings.
+- UI review: pending-human-test — choose Persuasion or Sleight of Hand in the bandit toll prompt and confirm a second explicit roll button appears with Charisma/Dexterity labeling before any success/failure resolution.
+- Blockers or coordination notes: Working from dedicated feature branch. Existing untracked lore/workflow files remain untouched. Dev server running at http://localhost:5173/.
+
 ## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/travel-sea-passage
 
 - Status: approved

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { buildWorldData, type WorldData } from '../data/worldLoader';
 import { MINUTES_PER_DAY, START_DATE, START_TIME, toOrdinal } from '../sim/calendar';
 import type { WorldEvent } from '../sim/events';
-import { eventHighlightFor, initialState, makeReducer, settlementVendorsAt } from './store';
+import { eventHighlightFor, initialState, isBanditTollActor, makeReducer, settlementVendorsAt } from './store';
 import { makeTestCharacter } from '../combat/fixtures';
 import { generateLoot } from '../combat/loot';
 import { planTravel, seaPortDestinations, type TravelDestination } from '../player/travel';
@@ -233,6 +233,146 @@ describe('game clock state', () => {
     const poor = withVosels(atPort, 5);
     const before = reducer(initialState(wd), { type: 'setPlayer', player: poor });
     expect(reducer(before, { type: 'travel', plan })).toBe(before);
+  });
+
+  function banditTollState(
+    vosels: number,
+    mods: Partial<ReturnType<typeof makeTestCharacter>['abilityModifiers']> = {},
+    actor: { kind: 'brigand' | 'traveler' | 'merchant'; statblockId: string } = { kind: 'brigand', statblockId: 'bandit' },
+  ) {
+    const origin = wd.world.burgs[0];
+    const target = wd.world.burgs[1];
+    const pc = makeTestCharacter('fighter');
+    const player = {
+      ...pc,
+      abilityModifiers: { ...pc.abilityModifiers, ...mods },
+      inventory: pc.inventory.map((it) => (it.id === 'vosels' ? { ...it, quantity: vosels } : it)),
+      location: {
+        cellId: origin.cell,
+        x: origin.x,
+        y: origin.y,
+        stateId: origin.state,
+        stateName: wd.stateById.get(origin.state)?.name ?? 'Test',
+        placeName: `the road to ${target.name}`,
+        reason: 'stopped by brigands',
+      },
+    };
+    const destination: TravelDestination = {
+      id: 'target',
+      name: target.name,
+      detail: 'settlement',
+      kind: 'burg',
+      x: target.x,
+      y: target.y,
+      cellId: target.cell,
+      distanceMi: wd.distanceMi(origin.x, origin.y, target.x, target.y),
+      landReachable: true,
+      boatReachable: false,
+    };
+    return {
+      ...initialState(wd),
+      player,
+      screen: 'encounter' as const,
+      pendingEncounter: {
+        encounter: {
+          atFraction: 0.35,
+          elapsedMinutes: 90,
+          x: origin.x + 4,
+          y: origin.y + 4,
+          cellId: origin.cell,
+          actor: { kind: actor.kind, hostile: true, statblockId: actor.statblockId, descriptor: 'bandits demand coin' },
+          lambda: 0.2,
+          hostileChance: 0.85,
+          date: START_DATE,
+        },
+        resume: { destination, mode: 'road' as const, dayOnly: true },
+      },
+    };
+  }
+
+  it('lets the player pay every vosel to satisfy hostile brigands', () => {
+    const reducer = makeReducer(wd);
+    const s = reducer(banditTollState(37), { type: 'payBanditToll' });
+    expect(voselsOf(s.player!)).toBe(0);
+    expect(s.screen).toBe('encounter');
+    expect(s.pendingEncounter).not.toBeNull();
+    expect(s.encounterToll).toMatchObject({ method: 'pay-all', demandedVosels: 37, paidVosels: 37, success: true });
+  });
+
+  it('treats hostile road bandit statblocks as toll encounters even when the actor kind is traveler', () => {
+    const reducer = makeReducer(wd);
+    const before = banditTollState(25, {}, { kind: 'traveler', statblockId: 'bandit' });
+    const paid = reducer(before, { type: 'payBanditToll' });
+    expect(paid.screen).toBe('encounter');
+    expect(paid.combat).toBeNull();
+    expect(voselsOf(paid.player!)).toBe(0);
+    expect(paid.encounterToll).toMatchObject({ method: 'pay-all', demandedVosels: 25, paidVosels: 25, success: true });
+  });
+
+  it('classifies the road-thin bandit statblock as toll-eligible outside brigand actor kind', () => {
+    expect(isBanditTollActor({
+      kind: 'traveler',
+      hostile: true,
+      statblockId: 'bandit',
+      descriptor: 'a road-thin man in a patched gambeson, scimitar notched from old work, eyes doing arithmetic on your belongings',
+    })).toBe(true);
+    expect(isBanditTollActor({
+      kind: 'traveler',
+      hostile: true,
+      statblockId: 'thug',
+      descriptor: 'a hard-eyed traveler',
+    })).toBe(false);
+  });
+
+  it('lets a strong Persuasion check pay half and avoid battle', () => {
+    const reducer = makeReducer(wd);
+    const pending = reducer(banditTollState(41, { cha: 30 }), { type: 'attemptBanditTollSkill', method: 'persuasion' });
+    expect(voselsOf(pending.player!)).toBe(41);
+    expect(pending.encounterToll).toMatchObject({ method: 'persuasion', demandedVosels: 41, paidVosels: 0, success: false, pending: true });
+
+    const s = reducer(pending, { type: 'rollBanditTollSkill' });
+    expect(voselsOf(s.player!)).toBe(20);
+    expect(s.screen).toBe('encounter');
+    expect(s.combat).toBeNull();
+    expect(s.encounterToll?.success).toBe(true);
+    expect(s.encounterToll?.paidVosels).toBe(21);
+    expect(s.encounterToll?.roll?.label).toContain('Persuasion');
+  });
+
+  it('lets a strong Sleight of Hand check hide half the purse', () => {
+    const reducer = makeReducer(wd);
+    const pending = reducer(banditTollState(40, { dex: 30 }), { type: 'attemptBanditTollSkill', method: 'sleightOfHand' });
+    expect(voselsOf(pending.player!)).toBe(40);
+    expect(pending.encounterToll).toMatchObject({ method: 'sleightOfHand', pending: true });
+
+    const s = reducer(pending, { type: 'rollBanditTollSkill' });
+    expect(voselsOf(s.player!)).toBe(20);
+    expect(s.screen).toBe('encounter');
+    expect(s.encounterToll?.success).toBe(true);
+    expect(s.encounterToll?.paidVosels).toBe(20);
+    expect(s.encounterToll?.roll?.label).toContain('Sleight of Hand');
+  });
+
+  it('starts combat when the bandit toll skill check fails', () => {
+    const reducer = makeReducer(wd);
+    const pending = reducer(banditTollState(40, { cha: -20 }), { type: 'attemptBanditTollSkill', method: 'persuasion' });
+    const failed = reducer(pending, { type: 'rollBanditTollSkill' });
+    expect(voselsOf(failed.player!)).toBe(40);
+    expect(failed.screen).toBe('encounter');
+    expect(failed.combat).toBeNull();
+    expect(failed.encounterToll?.success).toBe(false);
+    expect(failed.encounterToll?.roll?.vs?.success).toBe(false);
+
+    const s = reducer(failed, { type: 'attackEncounter' });
+    expect(s.screen).toBe('combat');
+    expect(s.combat?.monsterId).toBe('bandit');
+  });
+
+  it('does not resolve the bandit toll when the player has no coin', () => {
+    const reducer = makeReducer(wd);
+    const before = banditTollState(0);
+    expect(reducer(before, { type: 'payBanditToll' })).toBe(before);
+    expect(reducer(before, { type: 'attemptBanditTollSkill', method: 'sleightOfHand' })).toBe(before);
   });
 
   it('runs the burned-hall aftermath: fire state, feed entry, completion, and the stabilize quest', () => {
