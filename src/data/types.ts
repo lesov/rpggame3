@@ -182,6 +182,8 @@ export interface Marker {
   cell: number;
   name?: string;
   legend?: string;
+  /** Portrait image path (public/assets/...), for curated encounter NPCs. */
+  portrait?: string;
 }
 
 export interface Zone {
