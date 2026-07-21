@@ -4,6 +4,15 @@ Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
 ## 2026-07-20 - claude-fable-5 - feature/claude-fable-5/encounter-npcs-fill
 
+- Status: approved
+- Summary: Human approver tested the 4 newly-filled encounter markers and stated "my check passed, merge it" — explicit UI approval and merge authorization. Merging feature/claude-fable-5/encounter-npcs-fill into main locally with --no-ff.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 331 passed; `npx tsc -b` clean; `npm run build` passed (as of ready-for-review entry).
+- UI review: approved-by-human (2026-07-20)
+- Blockers or coordination notes: No release tag requested. Not pushing — human pushes main manually.
+
+## 2026-07-20 - claude-fable-5 - feature/claude-fable-5/encounter-npcs-fill
+
 - Status: started
 - Summary: Fill the 4 remaining empty `encounters` markers (187 Yuan-ti/Knighbouria, 190/195/209 Leonin/Amalan+Shun+Sio) left unreplaced last session for lack of a race match. Human clarified race doesn't need to match local culture — these NPCs are wanderers/traders/on a mission. Picking 4 wanderer/trader-flavored bios from the existing 48-entry reserve pool; pure data change, no code touched (applyCuratedEncounters already handles any assigned marker).
 - Files changed: data/encounters.assignments.json (4 new entries: 187 -> Krommur Redhead/Gnome wanderer-surgeon verbatim, 190 -> Gulfim/Orc merchant-charlatan verbatim, 195 -> Amworth/Goblin wanderer-spy with a one-line edit decoupling "the reigning king" from Shun's actual princess, 209 -> Hezick Greatbuster/Dwarf seeker-traveler verbatim), src/data/encounters.test.ts (25->29 count; replaced the "left unassigned" test with "all 29 filled"), AGENT_CHANGELOG.md.
