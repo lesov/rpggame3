@@ -439,6 +439,56 @@ describe('game clock state', () => {
     expect(s.pendingLoot).toBeNull();
   });
 
+  it('starts a hungry non-ranger battle with 10% less HP', () => {
+    const reducer = makeReducer(wd);
+    const pc = makeTestCharacter('fighter');
+    const player = {
+      ...pc,
+      inventory: pc.inventory.map((item) => (item.id === 'provisions' ? { ...item, quantity: 0 } : item)),
+    };
+    const state = {
+      ...initialState(wd),
+      player,
+      partyHunger: { startedAt: START_DATE, missingProvisionDays: 1 },
+    };
+    const next = reducer(state, { type: 'startCombat', monsterId: 'bandit', seed: 7 });
+    expect(next.combat?.player.hp).toBe(Math.floor(player.maxHp * 0.9));
+    expect(next.combat?.travelPenalty).toEqual({
+      kind: 'starved',
+      hpPenalty: player.maxHp - Math.floor(player.maxHp * 0.9),
+    });
+  });
+
+  it('does not starve a ranger at combat start', () => {
+    const reducer = makeReducer(wd);
+    const player = makeTestCharacter('ranger');
+    const state = {
+      ...initialState(wd),
+      player,
+      partyHunger: { startedAt: START_DATE, missingProvisionDays: 1 },
+    };
+    const next = reducer(state, { type: 'startCombat', monsterId: 'bandit', seed: 7 });
+    expect(next.combat?.player.hp).toBe(player.maxHp);
+    expect(next.combat?.travelPenalty).toBeUndefined();
+  });
+
+  it('casts Goodberry to create food and clear hunger', () => {
+    const reducer = makeReducer(wd);
+    const pc = makeTestCharacter('druid');
+    const player = {
+      ...pc,
+      inventory: pc.inventory.map((item) => (item.id === 'provisions' ? { ...item, quantity: 0 } : item)),
+    };
+    const state = {
+      ...initialState(wd),
+      player,
+      partyHunger: { startedAt: START_DATE, missingProvisionDays: 1 },
+    };
+    const next = reducer(state, { type: 'castFoodSpell' });
+    expect(quantityOf(next.player!, 'provisions')).toBe(1);
+    expect(next.partyHunger).toBeNull();
+  });
+
   it('commits travel by advancing time, moving the player, and consuming provisions', () => {
     const reducer = makeReducer(wd);
     const origin = wd.world.burgs[0];
@@ -505,6 +555,44 @@ describe('game clock state', () => {
       expect(next.jump?.x).toBe(target.x);
       expect(provisionsLeft).toBe(99 - plan.provisionsNeeded);
     }
+  });
+
+  it('marks a party hungry after travelling without provisions', () => {
+    const reducer = makeReducer(wd);
+    const origin = wd.world.burgs[0];
+    const target = wd.world.burgs[1];
+    const pc = makeTestCharacter('fighter');
+    const player = {
+      ...pc,
+      location: {
+        cellId: origin.cell,
+        x: origin.x,
+        y: origin.y,
+        stateId: origin.state,
+        stateName: wd.stateById.get(origin.state)?.name ?? 'Test',
+        placeName: origin.name,
+        reason: 'test',
+      },
+      inventory: pc.inventory.map((item) => (item.id === 'provisions' ? { ...item, quantity: 0 } : item)),
+    };
+    const destination: TravelDestination = {
+      id: 'target',
+      name: target.name,
+      detail: 'settlement',
+      kind: 'burg',
+      x: target.x,
+      y: target.y,
+      cellId: target.cell,
+      distanceMi: wd.distanceMi(origin.x, origin.y, target.x, target.y),
+      landReachable: true,
+      boatReachable: false,
+    };
+    const withPlayer = reducer(initialState(wd), { type: 'setPlayer', player });
+    const plan = planTravel(wd, player, destination, 'offroad', false, withPlayer.time);
+    const next = reducer(withPlayer, { type: 'travel', plan });
+    expect(next.partyHunger).toMatchObject({ missingProvisionDays: expect.any(Number) });
+    expect(next.partyHunger!.missingProvisionDays).toBeGreaterThan(0);
+    if (next.combat) expect(next.combat.travelPenalty?.kind).toBe('starved');
   });
 
   it('resuming an interrupted journey continues toward the same destination', () => {

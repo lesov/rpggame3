@@ -130,6 +130,7 @@ export function deserializeGame(env: SaveEnvelope, wd: WorldData): GameState | n
     ...rest,
     guildHallFire: rest.guildHallFire ?? null, // absent in pre-fire saves
     encounterToll: rest.encounterToll ?? null, // absent in pre-toll saves
+    partyHunger: rest.partyHunger ?? null, // absent in pre-hunger saves
     economy: decodeEconomy(economy, wd),
     jump: null,
     focus: null,
