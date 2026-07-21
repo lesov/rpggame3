@@ -4,6 +4,15 @@ Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
 ## 2026-07-20 - claude-fable-5 - feature/claude-fable-5/encounter-npcs
 
+- Status: approved
+- Summary: Human approver tested the curated encounter markers in the UI and stated "my check passed, merge it" — explicit UI approval and merge authorization. Merging feature/claude-fable-5/encounter-npcs into main locally with --no-ff.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 331 passed; `npx tsc -b` clean; `npm run build` passed (as of ready-for-review entry).
+- UI review: approved-by-human (2026-07-20)
+- Blockers or coordination notes: No release tag requested. Not pushing — human pushes main manually.
+
+## 2026-07-20 - claude-fable-5 - feature/claude-fable-5/encounter-npcs
+
 - Status: started
 - Summary: Replace the 29 map `encounters` markers' raw Deorum iframe-embed legends (currently shown as literal unescaped HTML to the player — no dangerouslySetInnerHTML anywhere) with a curated set of 73 human-supplied Deorum character pages, matched to markers by culture/race, lightly localized (place names, race words), and cached fully locally (bios + 512x512 portraits) with zero runtime dependency on deorum.vercel.app. Plan approved by human (agile-launching-lobster). Matching result: 25/29 markers get a well-fit replacement (13 human, 1 dwarf, 4 wood elf, 2 high elf, 4 leonin, 1 dragonborn); 3 Leonin + 1 Yuan-ti markers have no matching bio in this batch and keep cleaned (HTML-stripped) original text; the remaining 48 bios (gnome/orc/goblin/centaur/pixie/half-orc/lizardman + human/dwarf/elf/dragonborn surplus) are banked in a reserve pool for the future road-encounter feature. felinid/beastman folded into Leonin per human instruction.
 - Files changed: data/encounters.pool.json (new — all 73 supplied Deorum bios, normalized: mapped race, HTML-stripped bio, local portrait path, sourceUrl for provenance), data/encounters.assignments.json (new — the 25 marker→bio placements, storing only the fields that differ from the pool default), public/assets/encounters/*.webp (new, 73 files, ~4.1MB, all portraits downloaded once), src/data/types.ts (Marker.portrait field), src/data/worldLoader.ts (applyCuratedEncounters + stripHtml, called from buildWorldData so every `encounters` marker either gets its curated name/bio/portrait or has its legend HTML-stripped — no marker ever shows raw markup again), src/ui/Inspector.tsx (portrait thumbnail in the Local-lore entry), src/ui/styles.css (.lore-portrait), src/data/encounters.test.ts (new, 11 tests).
