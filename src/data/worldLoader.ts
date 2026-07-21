@@ -3,13 +3,83 @@
  * uses: id maps, the spatial cell index, climate accessors, the scripted
  * event stream, and the ambient-event context.
  */
-import type { Geometry, World, WarsFile, Burg, State, Province, Culture, Religion, Cell } from './types';
+import type { Geometry, World, WarsFile, Burg, State, Province, Culture, Religion, Cell, Marker } from './types';
 import { CellIndex } from '../map/hittest';
 import type { CellClimate } from '../sim/weather';
 import { buildScriptedEvents, type WorldEvent, type TimelineEntry } from '../sim/events';
 import type { AmbientContext } from '../sim/ambient';
 import { withPersonalityTraits } from './personality';
 import timelineJson from '../../data/events.timeline.json';
+import encountersPoolJson from '../../data/encounters.pool.json';
+import encountersAssignmentsJson from '../../data/encounters.assignments.json';
+
+export interface EncounterPoolEntry {
+  id: string;
+  name: string;
+  race: string;
+  sourceRace: string;
+  gender: string;
+  age: number | null;
+  archetype: string;
+  background: string;
+  bio: string;
+  portrait: string;
+  sourceUrl: string;
+}
+
+export interface EncounterAssignment {
+  poolId: string;
+  name?: string;
+  race?: string;
+  bio?: string;
+}
+
+const ENCOUNTERS_POOL = encountersPoolJson as EncounterPoolEntry[];
+const ENCOUNTERS_ASSIGNMENTS = encountersAssignmentsJson as Record<string, EncounterAssignment>;
+
+/** Strips HTML tags and collapses whitespace — for legend text that predates curation. */
+export function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Overlays curated, locally-stored NPC bios onto the map's `encounters`
+ * markers, replacing the raw Deorum iframe-embed legend the raw export
+ * carries. Markers with a curated assignment get a name/bio/portrait pulled
+ * from the local pool (data/encounters.pool.json); everything else just has
+ * its legend HTML-stripped so no marker ever shows raw markup to the player.
+ */
+export function applyCuratedEncounters(
+  markers: Marker[],
+  assignments: Record<string, EncounterAssignment> = ENCOUNTERS_ASSIGNMENTS,
+  pool: EncounterPoolEntry[] = ENCOUNTERS_POOL,
+): Marker[] {
+  const poolById = new Map(pool.map((p) => [p.id, p]));
+  return markers.map((m) => {
+    if (m.type !== 'encounters') return m;
+    const assignment = assignments[String(m.i)];
+    if (!assignment) {
+      return m.legend ? { ...m, legend: stripHtml(m.legend) } : m;
+    }
+    const entry = poolById.get(assignment.poolId);
+    if (!entry) return m.legend ? { ...m, legend: stripHtml(m.legend) } : m;
+    const name = assignment.name ?? entry.name;
+    const race = assignment.race ?? entry.race;
+    const bio = assignment.bio ?? entry.bio;
+    return {
+      ...m,
+      name: `${name} (${race})`,
+      legend: bio,
+      portrait: entry.portrait,
+    };
+  });
+}
 
 export interface WorldData {
   geometry: Geometry;
@@ -41,6 +111,7 @@ export function buildWorldData(geometry: Geometry, world: World, warsFile: WarsF
   const worldWithPeople: World = {
     ...world,
     people: world.people.map(withPersonalityTraits),
+    markers: applyCuratedEncounters(world.markers),
   };
 
   const latOf = (y: number) => mc.latN - (y / height) * mc.latT;

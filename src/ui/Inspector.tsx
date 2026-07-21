@@ -279,6 +279,7 @@ export function Inspector() {
             .map((n, i) => (
               <details key={i} className="lore">
                 <summary>{n.icon} {n.name}</summary>
+                {n.marker?.portrait && <img className="lore-portrait" src={n.marker.portrait} alt="" />}
                 <p>{n.marker?.legend ?? n.regiment?.legend}</p>
               </details>
             ))}

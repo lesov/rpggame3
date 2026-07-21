@@ -2,6 +2,54 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-20 - claude-fable-5 - feature/claude-fable-5/encounter-npcs
+
+- Status: approved
+- Summary: Human approver tested the curated encounter markers in the UI and stated "my check passed, merge it" — explicit UI approval and merge authorization. Merging feature/claude-fable-5/encounter-npcs into main locally with --no-ff.
+- Files changed: AGENT_CHANGELOG.md
+- Tests run: `npx vitest run` — 331 passed; `npx tsc -b` clean; `npm run build` passed (as of ready-for-review entry).
+- UI review: approved-by-human (2026-07-20)
+- Blockers or coordination notes: No release tag requested. Not pushing — human pushes main manually.
+
+## 2026-07-20 - claude-fable-5 - feature/claude-fable-5/encounter-npcs
+
+- Status: started
+- Summary: Replace the 29 map `encounters` markers' raw Deorum iframe-embed legends (currently shown as literal unescaped HTML to the player — no dangerouslySetInnerHTML anywhere) with a curated set of 73 human-supplied Deorum character pages, matched to markers by culture/race, lightly localized (place names, race words), and cached fully locally (bios + 512x512 portraits) with zero runtime dependency on deorum.vercel.app. Plan approved by human (agile-launching-lobster). Matching result: 25/29 markers get a well-fit replacement (13 human, 1 dwarf, 4 wood elf, 2 high elf, 4 leonin, 1 dragonborn); 3 Leonin + 1 Yuan-ti markers have no matching bio in this batch and keep cleaned (HTML-stripped) original text; the remaining 48 bios (gnome/orc/goblin/centaur/pixie/half-orc/lizardman + human/dwarf/elf/dragonborn surplus) are banked in a reserve pool for the future road-encounter feature. felinid/beastman folded into Leonin per human instruction.
+- Files changed: data/encounters.pool.json (new — all 73 supplied Deorum bios, normalized: mapped race, HTML-stripped bio, local portrait path, sourceUrl for provenance), data/encounters.assignments.json (new — the 25 marker→bio placements, storing only the fields that differ from the pool default), public/assets/encounters/*.webp (new, 73 files, ~4.1MB, all portraits downloaded once), src/data/types.ts (Marker.portrait field), src/data/worldLoader.ts (applyCuratedEncounters + stripHtml, called from buildWorldData so every `encounters` marker either gets its curated name/bio/portrait or has its legend HTML-stripped — no marker ever shows raw markup again), src/ui/Inspector.tsx (portrait thumbnail in the Local-lore entry), src/ui/styles.css (.lore-portrait), src/data/encounters.test.ts (new, 11 tests).
+- Tests run: `npx vitest run` — 331 tests / 41 files, all passed (11 new). `npx tsc -b` clean. `npm run build` passed. Headless Chromium: clicked near marker 181 (Bobadelian Khaganate, dwarf culture) — Nearby list shows "Swisger (Dwarf)" (was "Random encounter"), Local lore entry expands with his portrait thumbnail and full bio, zero console errors, image request returns 200; broader sweep near marker 206 confirmed the ruler-downgrade rewrite reads naturally and explicitly reconciles with canon ("sworn... to the Khagan's peace"), no `<iframe`/`deorum` text visible anywhere.
+- UI review: pending-human-test — click near any of the 25 markers below and expand Local lore.
+- Blockers or coordination notes: **Matching result** — 25/29 `encounters` markers replaced by culture/race:
+
+  | Marker | Race | Name | Pool ID |
+  |---|---|---|---|
+  | 181 | Dwarf | Swisger | jw0fquh8nq5b0i9 |
+  | 182 | Wood Elf | Hagwin Nericaryn | gws3f95l62b5nre |
+  | 183 | Leonin | Yukio | h13fixr8ohgzo04 |
+  | 184 | Leonin | Murcello | hlbqo9l2w2m2v6u |
+  | 185 | Leonin | Desegon | jy902fsnvbwccny |
+  | 186 | Wood Elf | Lorcan Summerfyre | icmv4l6jsd5rbw1 |
+  | 188 | Human | Beek Bollen | i8ynwv7uc4bovlq |
+  | 189 | High Elf | Arcus Erini | hkk69qauslt9bai |
+  | 191 | High Elf | Brolfur Wenga | j0ig654j7coy15x |
+  | 192 | Wood Elf | Jerlando Petven | k6gwhapfdzjyo19 |
+  | 193 | Human | Gol Chumug | heyvqku2xem7sfy |
+  | 194 | Human | Foktas Gudrak | k5rfpr3mu30xb70 |
+  | 196 | Human | Jacob Genn | imicpslsvr5vfq5 |
+  | 197 | Human | Ronak Foles | ia08bqdmxrxmeog |
+  | 198 | Human | Ferry Ulefan | jiat5cyjj1oepbv |
+  | 199 | Human | Moten Misirga | jcmuyi6jrwxk0or |
+  | 200 | Dragonborn | Slintodelagon | io9kobnwfnuqna9 |
+  | 201 | Human | Oswin Tassilo | hxjkrd0ailqh19w |
+  | 202 | Human | Almira Burke | gx50uvi4zvmlps7 |
+  | 203 | Human | Raldoc Ivzore | ia0fdggdiugsv6d |
+  | 204 | Wood Elf | Orluo Zallian | hkbeibi99062g4w |
+  | 205 | Human | Tabris Penty | hgedm4xieem8s9p |
+  | 206 | Human | Hayliel Areas | gtw9xu225pym2tx |
+  | 207 | Human | Kevel Stiz | kwij4d6ww6kjnnr |
+  | 208 | Leonin | Thamchy | k8krm62tj0xb8fi |
+
+  Markers 187 (Yuan-ti), 190/195/209 (Leonin, no bio left after 4 assigned to 183/184/185/208) keep original Azgaar content, HTML-stripped only. 48 bios (gnome/orc/goblin/centaur/pixie/half-orc/lizardman + human/dwarf/elf/dragonborn surplus) banked in the pool file, unused by any marker — reserved for the future road-chance-encounter feature. **Deliberate exceptions to "light touch" localization**: 203 (Raldoc Ivzore) and 206 (Hayliel Areas) were originally "becomes king of the realm" stories; since Tarlivah's and Kozesleli's rulers are already established (Queen Kurdnan, Khagan Vyshon — the latter is load-bearing 1219-campaign canon), both were downgraded from sovereign to noble-house/court framing rather than just swapping the kingdom's name, to avoid a visible contradiction when a player inspects the state panel and the encounter bio side by side. 205 (Tabris Penty) also had three real-world pop-culture references removed (Blackbeard, the Rolling Stones, "King of the Caribbean") regardless of geography — those break immersion on their own, not just as foreign place names.
+
 ## 2026-07-19 - claude-fable-5 - feature/claude-fable-5/no-water-strand
 
 - Status: approved
