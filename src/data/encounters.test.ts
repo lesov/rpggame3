@@ -80,8 +80,8 @@ describe('data/encounters.pool.json and data/encounters.assignments.json', () =>
     }
   });
 
-  it('has 25 curated encounter markers, none with leftover HTML', () => {
-    expect(Object.keys(ASSIGNMENTS).length).toBe(25);
+  it('has 29 curated encounter markers, none with leftover HTML', () => {
+    expect(Object.keys(ASSIGNMENTS).length).toBe(29);
     const byId = new Map(POOL.map((p) => [p.id, p]));
     for (const [markerId, a] of Object.entries(ASSIGNMENTS)) {
       const entry = byId.get(a.poolId)!;
@@ -101,9 +101,11 @@ describe('data/encounters.pool.json and data/encounters.assignments.json', () =>
     }
   });
 
-  it('the 3 Leonin and 1 Yuan-ti markers without a source match are left unassigned', () => {
+  it('fills every one of the 29 encounters markers — race need not match local culture', () => {
+    // 187 (Yuan-ti) and 190/195/209 (Leonin) had no race-matched bio in the
+    // first batch; per the human, these NPCs travel, so any bio works.
     for (const markerId of ['187', '190', '195', '209']) {
-      expect(ASSIGNMENTS[markerId]).toBeUndefined();
+      expect(ASSIGNMENTS[markerId]).toBeDefined();
     }
   });
 
