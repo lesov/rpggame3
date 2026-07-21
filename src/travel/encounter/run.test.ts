@@ -38,7 +38,7 @@ function plan(over: Partial<TravelPlan> = {}): TravelPlan {
     mode: 'offroad', dayOnly: false, routeGroup: undefined, roadAvailable: false,
     distanceMi: 100, paceMph: 2, paceLabel: '', paceDetail: '', activeTravelLabel: 'walking hr',
     biomeMultiplier: 1.2, travelHours: 50, elapsedMinutes: 50 * 60,
-    provisionsNeeded: 3, provisionsAvailable: 5, insufficientProvisions: false, summary: '',
+    provisionsNeeded: 3, provisionsAvailable: 5, insufficientProvisions: false, foragingPenalty: false, summary: '',
     ...over,
   };
 }

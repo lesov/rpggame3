@@ -247,6 +247,31 @@ describe('travel planning', () => {
     expect(plan.insufficientProvisions).toBe(true);
   });
 
+  it('slows non-ranger overland travel when no provisions are packed', () => {
+    const wd = makeTravelWorld();
+    const fed = planTravel(wd, makePlayer(1), destination, 'road', false, { hour: 8, minute: 0 });
+    const hungry = planTravel(wd, makePlayer(0), destination, 'road', false, { hour: 8, minute: 0 });
+    expect(hungry.foragingPenalty).toBe(true);
+    expect(hungry.paceMph).toBeCloseTo(fed.paceMph * 0.8, 1);
+    expect(hungry.paceDetail).toContain('foraging for food');
+  });
+
+  it('lets rangers ignore the no-provisions travel slowdown', () => {
+    const wd = makeTravelWorld();
+    const fed = planTravel(wd, makePlayer(1), destination, 'road', false, { hour: 8, minute: 0 });
+    const ranger: PlayerCharacter = { ...makePlayer(0), classId: 'ranger', className: 'Ranger' };
+    const hungry = planTravel(wd, ranger, destination, 'road', false, { hour: 8, minute: 0 });
+    expect(hungry.foragingPenalty).toBe(false);
+    expect(hungry.paceMph).toBe(fed.paceMph);
+  });
+
+  it('offers Goodberry to druids travelling without provisions', () => {
+    const wd = makeTravelWorld();
+    const druid: PlayerCharacter = { ...makePlayer(0), classId: 'druid', className: 'Druid' };
+    const plan = planTravel(wd, druid, destination, 'offroad', false, { hour: 8, minute: 0 });
+    expect(plan.foodSpellName).toBe('Goodberry');
+  });
+
   it('road travel is faster than off-road travel across hard terrain', () => {
     const wd = makeTravelWorld();
     const player = makePlayer();

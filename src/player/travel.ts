@@ -39,6 +39,8 @@ export interface TravelPlan {
   provisionsNeeded: number;
   provisionsAvailable: number;
   insufficientProvisions: boolean;
+  foragingPenalty: boolean;
+  foodSpellName?: string;
   /** Passage fee in vosels; set only for boat legs. */
   fareVosels?: number;
   summary: string;
@@ -58,6 +60,7 @@ const TRAIL_MPH = 2.7;
 /** D&D sailing ship: 2 mph, sailing day and night (48 miles per day). */
 const SAILING_SHIP_MPH = 2;
 const OFFROAD_BASE_MPH = 2.1;
+const FORAGING_SPEED_FACTOR = 0.8;
 const DAYLIGHT_START = 6;
 const DAYLIGHT_END = 18;
 
@@ -292,6 +295,16 @@ export function provisionsNeeded(elapsedMinutes: number): number {
   return Math.max(1, Math.ceil(elapsedMinutes / MINUTES_PER_DAY));
 }
 
+export function isNaturalExplorerRanger(player: PlayerCharacter): boolean {
+  return player.classId === 'ranger';
+}
+
+export function foodSpellNameFor(player: PlayerCharacter): string | null {
+  if (isNaturalExplorerRanger(player)) return null;
+  if (player.classId === 'druid') return 'Goodberry';
+  return null;
+}
+
 export function travelDestinationLocation(wd: WorldData, destination: TravelDestination, reason: string): PlayerLocation {
   const cell = wd.geometry.cells[destination.cellId];
   const state = cell.state > 0 ? wd.stateById.get(cell.state) : undefined;
@@ -439,16 +452,18 @@ export function planTravel(
     : directDistance;
   // A heavy pack slows you on foot; a crewed boat is unaffected.
   const loadFactor = effectiveMode === 'boat' ? 1 : travelSpeedFactor(player);
+  const available = provisionsAvailable(player);
+  const foragingPenalty = effectiveMode !== 'boat' && available <= 0 && !isNaturalExplorerRanger(player);
+  const foodFactor = foragingPenalty ? FORAGING_SPEED_FACTOR : 1;
   const mph = (effectiveMode === 'road' && route
     ? route.group === 'roads' ? ROAD_MPH : TRAIL_MPH
     : effectiveMode === 'boat'
       ? SAILING_SHIP_MPH
-    : OFFROAD_BASE_MPH / biomeMultiplier) * loadFactor;
+    : OFFROAD_BASE_MPH / biomeMultiplier) * loadFactor * foodFactor;
   const travelDayOnly = effectiveMode === 'boat' ? false : dayOnly;
   const travelHours = distanceMi / mph;
   const elapsedMinutes = elapsedMinutesForTravel(travelHours * 60, startTime, travelDayOnly);
   const needed = provisionsNeeded(elapsedMinutes);
-  const available = provisionsAvailable(player);
   const modeLabel = effectiveMode === 'road' && route ? route.group : effectiveMode === 'boat' ? 'by boat' : 'off road';
   const roadLabel = route?.group === 'roads' ? 'Road travel' : 'Trail travel';
   const paceLabel = effectiveMode === 'boat'
@@ -457,12 +472,13 @@ export function planTravel(
       ? roadLabel
     : 'Off-road walking';
   const loadNote = loadFactor < 0.999 ? `, ${loadFactor.toFixed(2)}x under load` : '';
+  const forageNote = foragingPenalty ? ', foraging for food' : '';
   const fareVosels = effectiveMode === 'boat' ? boatFareVosels(distanceMi) : undefined;
   const paceDetail = effectiveMode === 'boat'
     ? `${paceLabel}, ${mph.toFixed(1)} mph average; sails day and night; no encounters at sea`
     : effectiveMode === 'road' && route
-      ? `${paceLabel}, ${mph.toFixed(1)} mph average${loadNote}`
-    : `${paceLabel}, ${mph.toFixed(1)} mph after ${biomeMultiplier.toFixed(2)}x terrain${loadNote}`;
+      ? `${paceLabel}, ${mph.toFixed(1)} mph average${loadNote}${forageNote}`
+    : `${paceLabel}, ${mph.toFixed(1)} mph after ${biomeMultiplier.toFixed(2)}x terrain${loadNote}${forageNote}`;
   const activeTravelLabel = effectiveMode === 'boat'
     ? 'sailing hr'
     : effectiveMode === 'road' && route?.group === 'roads'
@@ -488,6 +504,8 @@ export function planTravel(
     provisionsNeeded: needed,
     provisionsAvailable: available,
     insufficientProvisions: available < needed,
+    foragingPenalty,
+    foodSpellName: available <= 0 ? foodSpellNameFor(player) ?? undefined : undefined,
     fareVosels,
     summary:
       `${Math.round(distanceMi)} mi ${modeLabel}; ${Math.ceil(elapsedMinutes / 60)} elapsed hours` +

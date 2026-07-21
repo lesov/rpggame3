@@ -19,7 +19,17 @@ import { ambientEventsBetween } from '../sim/ambient';
 import type { WorldData } from '../data/worldLoader';
 import type { RenderOptions } from '../map/renderer';
 import type { PlayerCharacter, Skill } from '../player/types';
-import { travelDestinationLocation, planTravel, provisionsNeeded, type TravelPlan, type TravelMode, type TravelDestination } from '../player/travel';
+import {
+  travelDestinationLocation,
+  planTravel,
+  provisionsAvailable,
+  provisionsNeeded,
+  isNaturalExplorerRanger,
+  foodSpellNameFor,
+  type TravelPlan,
+  type TravelMode,
+  type TravelDestination,
+} from '../player/travel';
 import type { CombatState } from '../combat/types';
 import { createCombat, initialPendingRoll, potionsRemainingById } from '../combat/engine';
 import { DiceStream, versus, type RollBreakdown } from '../combat/dice';
@@ -43,6 +53,7 @@ import {
   responseWaitRemainingMinutes,
   speakToSemina,
   startStabilizeQuest,
+  STABILIZE_QUEST_ID,
 } from '../quests/progression';
 
 export type Speed = 'hour' | 'day' | 'week';
@@ -81,6 +92,11 @@ export interface TravelTargetPreview {
   cellId: number;
 }
 
+export interface PartyHunger {
+  startedAt: GameDate;
+  missingProvisionDays: number;
+}
+
 export interface GameState {
   date: GameDate;
   time: GameTime;
@@ -100,6 +116,7 @@ export interface GameState {
   pacing: PacingState;
   pendingEncounter: PendingEncounter | null;
   encounterToll: BanditTollResult | null;
+  partyHunger: PartyHunger | null;
   travelTarget: TravelTargetPreview | null;
   selectedCodexId: string | null;
   shop: ShopSession | null;
@@ -182,6 +199,7 @@ export type GameAction =
   | { type: 'attemptBanditTollSkill'; method: 'persuasion' | 'sleightOfHand' }
   | { type: 'rollBanditTollSkill' }
   | { type: 'cancelBanditTollSkill' }
+  | { type: 'castFoodSpell' }
   | { type: 'startCombat'; monsterId?: string; seed?: number }
   | { type: 'setCombat'; combat: CombatState }
   | { type: 'claimCombatLoot' }
@@ -332,6 +350,7 @@ export function initialState(wd: WorldData): GameState {
     pacing: initialPacing,
     pendingEncounter: null,
     encounterToll: null,
+    partyHunger: null,
     travelTarget: null,
     selectedCodexId: null,
     shop: null,
@@ -349,6 +368,7 @@ function beginCombat(
   time: GameTime,
   monsterId: string | undefined,
   seed: number,
+  hunger: PartyHunger | null = null,
 ): CombatState {
   const loc = player.location;
   const scene = buildScene(wd, loc.cellId, loc.x, loc.y, date, time);
@@ -356,7 +376,7 @@ function beginCombat(
   const monster = monsterId
     ? getMonster(monsterId)
     : defaultOpponentFor(cell?.biome ?? 4, Boolean(cell?.burg));
-  return initialPendingRoll(createCombat(player, monster, scene, seed));
+  return applyStarvationPenalty(initialPendingRoll(createCombat(player, monster, scene, seed)), hunger, player);
 }
 
 function advanceClock(wd: WorldData, state: GameState, minutes: number): GameState {
@@ -379,6 +399,40 @@ function consumeProvisions(player: PlayerCharacter, amount: number): PlayerChara
     inventory: player.inventory.map((item) =>
       item.id === 'provisions' ? { ...item, quantity: Math.max(0, item.quantity - amount) } : item,
     ),
+  };
+}
+
+function hasNpcForagingRangerInParty(player: PlayerCharacter): boolean {
+  return player.quests.some((q) => q.id === STABILIZE_QUEST_ID && q.status === 'active' && q.phase === undefined);
+}
+
+function hasForagingRangerProtection(player: PlayerCharacter): boolean {
+  return isNaturalExplorerRanger(player) || hasNpcForagingRangerInParty(player);
+}
+
+function hungerAfterTravel(
+  player: PlayerCharacter,
+  date: GameDate,
+  needed: number,
+  availableBeforeTravel: number,
+): PartyHunger | null {
+  if (hasForagingRangerProtection(player)) return null;
+  const missing = Math.max(0, needed - availableBeforeTravel);
+  return missing > 0 ? { startedAt: date, missingProvisionDays: missing } : null;
+}
+
+function clearHungerIfFed(player: PlayerCharacter, hunger: PartyHunger | null): PartyHunger | null {
+  return provisionsAvailable(player) > 0 ? null : hunger;
+}
+
+function applyStarvationPenalty(combat: CombatState, hunger: PartyHunger | null, player: PlayerCharacter): CombatState {
+  if (!hunger || hasForagingRangerProtection(player)) return combat;
+  const starvedHp = Math.max(1, Math.floor(combat.player.maxHp * 0.9));
+  if (starvedHp >= combat.player.hp) return combat;
+  return {
+    ...combat,
+    player: { ...combat.player, hp: starvedHp },
+    travelPenalty: { kind: 'starved', hpPenalty: combat.player.hp - starvedHp },
   };
 }
 
@@ -418,12 +472,14 @@ function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameSt
     const advanced = advanceClock(wd, state, plan.elapsedMinutes);
     const location = travelDestinationLocation(wd, plan.destination, plan.summary);
     const movedPlayer = consumeProvisions({ ...player, location }, plan.provisionsNeeded);
+    const legHunger = hungerAfterTravel(movedPlayer, advanced.date, plan.provisionsNeeded, plan.provisionsAvailable);
     return {
       ...advanced,
       player: movedPlayer,
       pacing: advancePacing(state.pacing, plan.travelHours),
       pendingEncounter: null,
       encounterToll: null,
+      partyHunger: legHunger ?? clearHungerIfFed(movedPlayer, state.partyHunger),
       travelTarget: null,
       screen: 'map',
       jump: { seq: (state.jump?.seq ?? 0) + 1, x: location.x, y: location.y, minZoom: 5 },
@@ -447,7 +503,9 @@ function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameSt
     placeName: `the road to ${plan.destination.name}`,
     reason: 'a traveller stopped short by what waits on the road',
   };
-  const movedPlayer = consumeProvisions({ ...player, location }, provisionsNeeded(e.elapsedMinutes));
+  const legProvisionNeed = provisionsNeeded(e.elapsedMinutes);
+  const movedPlayer = consumeProvisions({ ...player, location }, legProvisionNeed);
+  const legHunger = hungerAfterTravel(movedPlayer, advanced.date, legProvisionNeed, provisionsAvailable(player));
   const pendingEncounter: PendingEncounter = {
     encounter: e,
     resume: { destination: plan.destination, mode: plan.mode, dayOnly: plan.dayOnly },
@@ -458,6 +516,7 @@ function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameSt
     pacing: resetPacing(),
     pendingEncounter,
     encounterToll: null,
+    partyHunger: legHunger ?? clearHungerIfFed(movedPlayer, state.partyHunger),
     travelTarget: null,
     jump: { seq: (state.jump?.seq ?? 0) + 1, x: e.x, y: e.y, minZoom: 6 },
     focus: { x: e.x, y: e.y },
@@ -465,7 +524,7 @@ function runTravelLeg(wd: WorldData, state: GameState, plan: TravelPlan): GameSt
     panelTab: 'travel',
   };
   if (e.actor.hostile && !isBanditTollActor(e.actor)) {
-    const combat = beginCombat(wd, movedPlayer, base.date, base.time, e.actor.statblockId, hash(seed, 0x5151));
+    const combat = beginCombat(wd, movedPlayer, base.date, base.time, e.actor.statblockId, hash(seed, 0x5151), base.partyHunger);
     return { ...base, screen: 'combat', combat };
   }
   return { ...base, screen: 'encounter' };
@@ -602,6 +661,7 @@ export function makeReducer(wd: WorldData) {
           selection: { cellId: location.cellId, x: location.x, y: location.y },
           travelTarget: null,
           encounterToll: null,
+          partyHunger: null,
           panelTab: 'character',
         };
       }
@@ -612,7 +672,14 @@ export function makeReducer(wd: WorldData) {
         const jump: JumpCommand | null = loc
           ? { seq: (state.jump?.seq ?? 0) + 1, x: loc.x, y: loc.y, minZoom: 6 }
           : null;
-        return { ...loaded, jump, focus: loc ? { x: loc.x, y: loc.y } : null, eventHighlight: null, encounterToll: null };
+        return {
+          ...loaded,
+          jump,
+          focus: loc ? { x: loc.x, y: loc.y } : null,
+          eventHighlight: null,
+          encounterToll: null,
+          partyHunger: loaded.partyHunger ?? null,
+        };
       }
       case 'setTravelTarget': {
         const current = state.travelTarget;
@@ -703,7 +770,7 @@ export function makeReducer(wd: WorldData) {
         const pe = state.pendingEncounter;
         if (!state.player || !pe) return state;
         const seed = hash(state.ord, pe.encounter.cellId, minuteOfDayOf(state.time), 0x0a11ac);
-        const combat = beginCombat(wd, state.player, state.date, state.time, pe.encounter.actor.statblockId, seed);
+        const combat = beginCombat(wd, state.player, state.date, state.time, pe.encounter.actor.statblockId, seed, state.partyHunger);
         return { ...state, screen: 'combat', combat, encounterToll: null };
       }
       case 'dismissEncounter':
@@ -747,10 +814,17 @@ export function makeReducer(wd: WorldData) {
       }
       case 'cancelBanditTollSkill':
         return state.encounterToll?.pending ? { ...state, encounterToll: null } : state;
+      case 'castFoodSpell': {
+        if (!state.player || provisionsAvailable(state.player) > 0) return state;
+        const spellName = foodSpellNameFor(state.player);
+        if (!spellName) return state;
+        const player = addItem(state.player, 'provisions', 1);
+        return { ...state, player, partyHunger: null };
+      }
       case 'startCombat': {
         if (!state.player) return state;
         const seed = action.seed ?? ((Math.random() * 0x7fffffff) | 0);
-        const combat = beginCombat(wd, state.player, state.date, state.time, action.monsterId, seed);
+        const combat = beginCombat(wd, state.player, state.date, state.time, action.monsterId, seed, state.partyHunger);
         return { ...state, screen: 'combat', combat, pendingLoot: null, encounterToll: null, playing: false };
       }
       case 'setCombat':
@@ -765,6 +839,7 @@ export function makeReducer(wd: WorldData) {
         return {
           ...state,
           player,
+          partyHunger: clearHungerIfFed(player, state.partyHunger),
           pendingLoot: {
             combatSeed: state.combat.seed,
             monsterId: state.combat.monsterId,
@@ -825,7 +900,12 @@ export function makeReducer(wd: WorldData) {
         const result = buyFromShop(state.player, vendor, action.entryIndex, action.qty ?? 1);
         if (result.error) return state;
         const vendors = state.shop.vendors.map((v, i) => (i === state.shop!.index ? result.shop : v));
-        return { ...state, player: result.player, shop: { ...state.shop, vendors } };
+        return {
+          ...state,
+          player: result.player,
+          partyHunger: clearHungerIfFed(result.player, state.partyHunger),
+          shop: { ...state.shop, vendors },
+        };
       }
       case 'sellItem': {
         if (!state.player || !state.shop) return state;

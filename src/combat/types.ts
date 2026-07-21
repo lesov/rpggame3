@@ -226,6 +226,7 @@ export interface CombatState {
   scene: CombatScene;
   player: Combatant;
   enemy: Combatant;
+  travelPenalty?: { kind: 'starved'; hpPenalty: number };
   monsterId: string;
   phase: CombatPhase;
   round: number;

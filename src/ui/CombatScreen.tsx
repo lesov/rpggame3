@@ -123,7 +123,7 @@ function Battle({ combat }: { combat: CombatState }) {
       </header>
 
       <div className="combat-body">
-        <CombatantCard c={combat.player} round={combat.round} side="player" />
+        <CombatantCard c={combat.player} round={combat.round} side="player" penalty={combat.travelPenalty} />
 
         <section className="combat-log" data-testid="combat-log">
           {beats.filter((b) => b.kind !== 'outro').map((b) => (
@@ -190,7 +190,17 @@ function Battle({ combat }: { combat: CombatState }) {
   );
 }
 
-function CombatantCard({ c, round, side }: { c: Combatant; round: number; side: 'player' | 'enemy' }) {
+function CombatantCard({
+  c,
+  round,
+  side,
+  penalty,
+}: {
+  c: Combatant;
+  round: number;
+  side: 'player' | 'enemy';
+  penalty?: CombatState['travelPenalty'];
+}) {
   const frac = Math.max(0, c.hp / c.maxHp);
   const tier = exhaustionOf(c, round);
   const open = c.injuries.filter((i) => !i.healed);
@@ -209,6 +219,9 @@ function CombatantCard({ c, round, side }: { c: Combatant; round: number; side: 
         {c.conditions.raging && <span className="cond">raging</span>}
         {c.conditions.dodging && <span className="cond">dodging</span>}
       </div>
+      {penalty?.kind === 'starved' && (
+        <div className="combat-penalty">Starved: -{penalty.hpPenalty} starting HP</div>
+      )}
       {open.length > 0 && (
         <ul className="injury-list">
           {open.map((i, n) => (

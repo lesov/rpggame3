@@ -276,6 +276,20 @@ export function TravelPanel() {
             {plan.insufficientProvisions && (
               <div className="travel-warning">Not enough provisions for the full trip. Travel is allowed, but provisions will be exhausted.</div>
             )}
+            {plan.foragingPenalty && (
+              <div className="travel-warning">No provisions are packed. Travel speed is reduced by 20% while the party searches for food.</div>
+            )}
+            {state.partyHunger && (
+              <div className="travel-warning">The party is hungry. The next battle starts with 10% less HP unless food is found first.</div>
+            )}
+            {plan.foodSpellName && (
+              <div className="travel-warning travel-spell-prompt">
+                <span>No provisions are packed. Cast {plan.foodSpellName} before travelling?</span>
+                <button type="button" className="secondary-action" onClick={() => dispatch({ type: 'castFoodSpell' })}>
+                  Cast {plan.foodSpellName}
+                </button>
+              </div>
+            )}
           </div>
 
           <button

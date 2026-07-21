@@ -2,6 +2,33 @@
 
 Shared coordination log per AGENT_WORKFLOW_INSTRUCTIONS.md.
 
+## 2026-07-20 22:35 CDT - codex - main
+
+- Status: merged
+- Summary: Merged feature/codex/travel-hunger into main locally with --no-ff after human UI approval and merge authorization.
+- Files changed: AGENT_CHANGELOG.md, src/player/travel.ts, src/ui/store.tsx, src/ui/TravelPanel.tsx, src/ui/CombatScreen.tsx, src/ui/styles.css, src/combat/types.ts, src/persistence/saveGame.ts, src/player/travel.test.ts, src/ui/store.test.ts, src/travel/encounter/run.test.ts.
+- Tests run: `npx vitest run src/player/travel.test.ts src/ui/store.test.ts src/persistence/saveGame.test.ts` — 62 passed; `npx tsc -b` — clean; `npx vitest run` — 338 passed; `npm run build` — passed before merge.
+- UI review: approved-by-human (2026-07-20)
+- Blockers or coordination notes: Local main is ready for the human to push manually. No release tag requested.
+
+## 2026-07-20 22:34 CDT - codex - feature/codex/travel-hunger
+
+- Status: approved
+- Summary: Human approver tested the travel hunger/starvation UI and stated "everything is checked ok. merge and i will then push manually" — explicit UI approval and merge authorization. Preparing a local merge into main without pushing.
+- Files changed: AGENT_CHANGELOG.md, src/player/travel.ts, src/ui/store.tsx, src/ui/TravelPanel.tsx, src/ui/CombatScreen.tsx, src/ui/styles.css, src/combat/types.ts, src/persistence/saveGame.ts, src/player/travel.test.ts, src/ui/store.test.ts, src/travel/encounter/run.test.ts.
+- Tests run: `npx vitest run src/player/travel.test.ts src/ui/store.test.ts src/persistence/saveGame.test.ts` — 62 passed; `npx tsc -b` — clean; `npx vitest run` — 338 passed; `npm run build` — passed.
+- UI review: approved-by-human (2026-07-20)
+- Blockers or coordination notes: No release tag requested. Not pushing — human pushes main manually.
+
+## 2026-07-20 22:29 CDT - codex - feature/codex/travel-hunger
+
+- Status: ready-for-review
+- Summary: Added travel hunger handling: no-provisions overland travel now gets a 20% foraging speed penalty, hungry non-rangers start the next battle at 90% HP, rangers ignore the starvation HP penalty and personal forage slowdown, druids can cast Goodberry from the travel panel to create provisions, and hunger persists through save/load until food is gained.
+- Files changed: AGENT_CHANGELOG.md, src/player/travel.ts, src/ui/store.tsx, src/ui/TravelPanel.tsx, src/ui/CombatScreen.tsx, src/ui/styles.css, src/combat/types.ts, src/persistence/saveGame.ts, src/player/travel.test.ts, src/ui/store.test.ts, src/travel/encounter/run.test.ts.
+- Tests run: `npx vitest run src/player/travel.test.ts src/ui/store.test.ts src/persistence/saveGame.test.ts` — 62 passed; `npx tsc -b` — clean; `npx vitest run` — 338 passed; `npm run build` — passed.
+- UI review: pending-human-test
+- Blockers or coordination notes: Working from a dedicated feature branch. Existing untracked lore/workflow files remain untouched. Human should verify travel panel warnings, Goodberry prompt for a no-food druid, and combat HP display after starving travel.
+
 ## 2026-07-20 - claude-fable-5 - feature/claude-fable-5/encounter-npcs-fill
 
 - Status: approved
